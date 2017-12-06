@@ -400,6 +400,10 @@ else()
   set(PYTHON_FORCE_VERSION ${PYTHON_VERSION})
 endif()
 
+
+set(PYTHON_INCLUDE_DIR "/usr/include/python2.7")
+set(PYTHON_LIBRARY "/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so")
+
 # Python 
 # old: set(Python_ADDITIONAL_VERSIONS 3.4) , now select with cmake option PYTHON_VERSION
 find_package(PythonLibs ${PYTHON_FORCE_VERSION} QUIET)

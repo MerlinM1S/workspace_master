@@ -8,12 +8,24 @@
 
 from manta import *
 import random;
-#import numpy as np
+import sys
+mantaMsg("%d.%d" % (sys.version_info[0], sys.version_info[1]))
+
+import numpy as np
+import tensorflow as tf
+
+import mantatensor as mt
 
 
 # solver params
+seed = 1
 res = 4
-gs  = vec3(res, int(1.5*res), res)
+width = res
+height = int(res*1.5)
+depth = res
+random.seed(seed)
+
+gs  = vec3(width, height, depth)
 s   = FluidSolver(name='main', gridSize = gs)
 
 # prepare grids
@@ -22,10 +34,14 @@ vel      = s.create(MACGrid)
 density  = s.create(RealGrid)
 pressure = s.create(RealGrid)
 
-flags.initDomain()
+flags.initDomain(boundaryWidth = 0)
 flags.fillGrid()
 
 density.setConst(1);
+
+
+with tf.Session(''):
+    solver = mt.MantaSolverTest(width, height, depth)
 
 
 '''
@@ -37,7 +53,6 @@ for x in range(0, int(gs.x)):
 '''
 
 
-
                 
 
 for z in range(0, int(gs.z)):
@@ -47,6 +62,10 @@ for z in range(0, int(gs.z)):
             grid += '%.2f, ' % density.getValue(x, y, z)
         grid += '\r\n'
     mantaMsg(grid);
+    
+    
+npDensity = np.full((width, height, depth), 0.1, dtype=np.float)
+copyArrayToGridReal(source=npDensity, target=density )
 
 
 def gridToFile(fName, grid):
