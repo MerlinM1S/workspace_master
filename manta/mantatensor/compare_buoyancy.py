@@ -12,9 +12,75 @@ import sys
 mantaMsg("%d.%d" % (sys.version_info[0], sys.version_info[1]))
 
 import numpy as np
+from numpy import linalg as LA
+
 import tensorflow as tf
 
 import mantatensor as mt
+
+def correctAxis(array):
+    arrayShape =array.shape
+    if(len(arrayShape) == 3):
+        resultArray = np.empty([arrayShape[2], arrayShape[1], arrayShape[0]], np.result_type(array))
+        for x in range(arrayShape[0]):
+            for y in range(arrayShape[1]):
+                for z in range(arrayShape[2]):
+                    resultArray[z, y, x] = array[x, y, z]
+        return resultArray
+    if(len(arrayShape) == 4):
+        resultArray = np.empty([arrayShape[1], arrayShape[0], arrayShape[2], arrayShape[3]], np.result_type(array))
+        for x in range(arrayShape[0]):
+            for y in range(arrayShape[1]):
+                for z in range(arrayShape[2]):
+                    for i in range(arrayShape[3]):
+                        resultArray[y, x, z, i] = array[x, y, z, i]
+        return resultArray
+
+def getL2Error(array1, array2):
+    assert array1.shape == array2.shape, "Could not evalute L2 error between arrays because of different shapes %s vs %s" % (str(array1.shape), str(array2.shape))
+    arraySub = np.subtract(array1, array2)
+    arrayNorm = LA.norm(arraySub, axis=3)
+    printVecArray(arrayNorm)
+    print np.sum(arrayNorm)
+    
+def printVecArray(array):
+    if(len(array.shape) == 3):
+        for z in range(array.shape[2]):
+            grid = ''
+            for y in range(array.shape[1]): 
+                for x in range(array.shape[0]):
+                    grid += "%0.3f, " % array[x, y, z]
+                grid += '\r\n'
+            print grid 
+    if(len(array.shape) == 4):
+        for z in range(array.shape[2]):
+            grid = ''
+            for y in range(array.shape[1]): 
+                for x in range(array.shape[0]):
+                    grid += "(%0.3f, %0.3f, %0.3f), " % (array[x, y, z, 0], array[x, y, z, 1], array[x, y, z, 2])
+                grid += '\r\n'
+            print grid 
+            
+            
+            
+def printVecGrid(grid, width, height, depth):
+    if(isinstance(grid, RealGrid)):            
+        for z in range(depth):
+            text = ''
+            for y in range(height): 
+                for x in range(width):
+                    text += "%0.3f, " % grid.getValue(x, y, z)
+                text += '\r\n'
+            print text 
+    if(isinstance(grid, MACGrid)):           
+        for z in range(depth):
+            text = ''
+            for y in range(height): 
+                for x in range(width):
+                    text += "(%0.3f, %0.3f, %0.3f), " % (grid.getValue(x, y, z).x, grid.getValue(x, y, z).y, grid.getValue(x, y, z).z)
+                text += '\r\n'
+            print text 
+            
 
 
 # solver params
@@ -25,81 +91,66 @@ height = int(res*1.5)
 depth = res
 random.seed(seed)
 
-gs  = vec3(width, height, depth)
-s   = FluidSolver(name='main', gridSize = gs)
 
-# prepare grids
-flags    = s.create(FlagGrid)
-vel      = s.create(MACGrid)
-density  = s.create(RealGrid)
-pressure = s.create(RealGrid)
 
-flags.initDomain(boundaryWidth = 0)
-flags.fillGrid()
 
-density.setConst(1);
+
 
 
 with tf.Session(''):
     solver = mt.MantaSolverTest(width, height, depth)
-
-
-'''
-for x in range(0, int(gs.x)):
-    for y in range(0, int(gs.y)):
-        for z in range(0, int(gs.z)):
-            density.setValue(x, y, z, x+ y*10+z*100); #random.random()
-#flags.fillGrid(1)
-'''
-
-
-                
-
-for z in range(0, int(gs.z)):
-    grid = ''
-    for y in range(0, int(gs.y)):
-        for x in range(0, int(gs.x)):
-            grid += '%.2f, ' % density.getValue(x, y, z)
-        grid += '\r\n'
-    mantaMsg(grid);
+    solver.densityGrid = np.full((width, height, depth), 1, dtype=np.float)
+    
+    solver.randomizeDensity()
+    solver.randomizeVel()
     
     
-npDensity = np.full((width, height, depth), 0.1, dtype=np.float)
-copyArrayToGridReal(source=npDensity, target=density )
-
-
-def gridToFile(fName, grid):
-    array = np.empty([grid.width, grid.height, grid. depth])
-    for x in range(0, int(grid.width)):
-        for y in range(0, int(grid.height)):
-            for z in range(0, int(grid.depth)):
-                array[x, y, z] = density.getValue(x, y, z)
-    np.save(fName, array)
+    #printVecArray(solver.densityGrid)
     
-#gridToFile('ttt.npy', density)
-   
+    s   = FluidSolver(name='main', gridSize = vec3(width, height, depth))
+    
+    # prepare grids
+    mantaFlags    = s.create(FlagGrid)
+    mantaVel      = s.create(MACGrid)
+    mantaDensity  = s.create(RealGrid)
+    mantaPressure = s.create(RealGrid)
+
+    mantaFlags.initDomain()
+    mantaFlags.fillGrid()
+
+    copyArrayToGridVec3( source=correctAxis(solver.velGrid), target=mantaVel )
+    copyArrayToGridReal( source=correctAxis(solver.densityGrid), target=mantaDensity )
+    
+    
+    
+    addBuoyancy(density=mantaDensity, vel=mantaVel, gravity=vec3(0,-6e-4,0), flags=mantaFlags)
+    solver.addBuoyancy([0,-6e-4,0])
+    
+    
+    
+    tMantaVelArray = np.empty((height, width, depth, 3), dtype=np.float)
+    copyGridToArrayVec3( source=mantaVel, target=tMantaVelArray )
+    mantaVelArray = np.swapaxes(tMantaVelArray, 0, 1)
+    
+    tMantaDensityArray = np.empty((depth, height, width), dtype=np.float)
+    copyGridToArrayReal( source=mantaDensity, target=tMantaDensityArray )
+    mantaDensityArray = np.swapaxes(tMantaDensityArray, 0, 2)
 
 
-density.save('den_data.raw')
+    
+    
+    
+    
+    print "manta:\r\n"
+
+    #printVecGrid(mantaVel, width, height, depth)
+    print "\r\n"
+    printVecArray(mantaVelArray)
+    
+    print "\r\n"
 
 
-
-if (GUI):
-	gui = Gui()
-	gui.show()
-	gui.pause()
-	
-#main loop
-for t in range(250):
-	mantaMsg('\nFrame %i' % (s.frame))
-	addBuoyancy(density=density, vel=vel, gravity=vec3(0,-6e-4,0), flags=flags)
-	s.step()
-
-
-for z in range(0, int(gs.z)):
-    grid = ''
-    for y in range(0, int(gs.y)):
-        for x in range(0, int(gs.x)):
-            grid += '%.2f, ' % vel.getValue(x, y, z).y
-        grid += '\r\n'
-    mantaMsg(grid);
+    print "tensormanta:\r\n"
+    getL2Error(mantaVelArray, solver.velGrid)
+    
+    printVecArray(solver.velGrid)

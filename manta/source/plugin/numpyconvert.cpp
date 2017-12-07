@@ -86,11 +86,11 @@ void copyArrayToGridVector(const PyArrayContainer _Source, T& _Target)
 	{
 		case NumpyTypes::N_FLOAT:
 			FOR_IJK(_Target) { for(int w = 0; w < 3; ++w) {
-				_Target(i,j,k).value[w] = reinterpret_cast<float*>(_Source.pData)[w + uSizeW * (k +  uSizeZ * (i + uSizeX * j))]; } }
+                                _Target(i,j,k).value[w] = reinterpret_cast<float*>(_Source.pData)[w + uSizeW * (k +  uSizeZ * (i + uSizeX * j))]; } }
 			break;
 		case NumpyTypes::N_DOUBLE:
 			FOR_IJK(_Target) { for(int w = 0; w < 3; ++w) {
-				_Target(i,j,k).value[w] = reinterpret_cast<double*>(_Source.pData)[w + uSizeW * (k +  uSizeZ * (i + uSizeX * j))]; } }
+                                _Target(i,j,k).value[w] = reinterpret_cast<double*>(_Source.pData)[w + uSizeW * (k +  uSizeZ * (i + uSizeX * j))]; } }
 			break;
 		default:
 			break;
@@ -113,11 +113,11 @@ void copyGridToArrayVector(const T& _Source, PyArrayContainer _Target)
 	{
 		case NumpyTypes::N_FLOAT:
 			FOR_IJK(_Source) { for(int w = 0; w < 3; ++w) {
-				reinterpret_cast<float*>(_Target.pData)[w + uSizeW * (k +  uSizeZ * (i + uSizeX * j))] = _Source(i,j,k).value[w]; } }
+                                reinterpret_cast<float*>(_Target.pData)[w + uSizeW * (k +  uSizeZ * (i + uSizeX * j))] = _Source(i,j,k).value[w]; } }
 			break;
 		case NumpyTypes::N_DOUBLE:
 			FOR_IJK(_Source) { for(int w = 0; w < 3; ++w) {
-				reinterpret_cast<double*>(_Target.pData)[w + uSizeW * (k +  uSizeZ * (i + uSizeX * j))] = _Source(i,j,k).value[w]; } }
+                                reinterpret_cast<double*>(_Target.pData)[w + uSizeW * (k +  uSizeZ * (i + uSizeX * j))] = _Source(i,j,k).value[w]; } }
 			break;
 		default:
 			break;

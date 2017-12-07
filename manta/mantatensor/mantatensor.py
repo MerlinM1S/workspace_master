@@ -58,6 +58,20 @@ class MantaSolverTest(MantaSolver):
         
     def randomizeVel(self):
         randomizeFloatArray(self.velGrid)
+    
+    def pseudoRandomizeDensity(self):
+        for x in range(self.width):
+            for y in range(self.height):
+                for z in range(self.depth):
+                        self.densityGrid[x, y, z] = x + y*10 + z*100
+        
+    def pseudoRandomizeVel(self):
+        for x in range(self.width):
+            for y in range(self.height):
+                for z in range(self.depth):
+                        self.velGrid[x, y, z, 0] = x
+                        self.velGrid[x, y, z, 1] = y
+                        self.velGrid[x, y, z, 2] = z
         
     def randomizeFlags(self):
         for i in range(array.size):
