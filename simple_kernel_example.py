@@ -9,15 +9,17 @@ zero_out = zero_out_module.simple_kernel_example
 with tf.Session(''):
     #with tf.device("/device:GPU:0"):
     #with tf.device("/cpu:0"):
-        rnd_array = np.random.random_integers(0, 100, (4000, 4000))
-        res = 64
-        gs  = tf.constant([res, int(1.5*res), res])
-        array = [[1, 2], [3, 4]]
+        batches =2
+        width = 4
+        height = 6
+        depth = 4
         
-        x = tf.constant(np.random.rand(4000, 4000).astype(np.float32))
+        velGrid = np.zeros((batches, width, height, depth, 3), dtype=np.float)
+        flagsGrid = np.empty((batches, width, height, depth), dtype=np.int)
+        densityGrid = np.zeros((batches, width, height, depth), dtype=np.float)
         
         start_time = timeit.default_timer()
-        zero_out(x).eval()
+        zero_out(velGrid, flagsGrid, densityGrid, np.array([0,-6e-4,0])).eval()
         elapsed = timeit.default_timer() - start_time
         
         print("time: %f\r\n" % elapsed)

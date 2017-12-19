@@ -43,7 +43,7 @@ void SemiLagrangeMAC(FlagGrid& flags, MACGrid& vel, MACGrid& dst, MACGrid& src, 
 	Vec3 zpos = Vec3(i+0.5f,j+0.5f,k+0.5f) - vel.getAtMACZ(i,j,k) * dt;
 	Real vz = src.getInterpolatedComponentHi<2>(zpos, orderSpace);
 	
-	dst(i,j,k) = Vec3(vx,vy,vz);
+        dst(i,j,k) = Vec3(vx,vy,vz);
 }
 
 
