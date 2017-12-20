@@ -7,7 +7,8 @@ import mantatensor as mt
 
 test_empty_module = tf.load_op_library('/home/ansorge/tensorflow/bazel-bin/tensorflow/core/mantatensor/test_empty.so')
 test_empty = test_empty_module.test_empty
-    
+
+
 
 def randomizeFloatArray(array):
     for i in range(array.size):
@@ -17,51 +18,76 @@ class MantaSolverTest(mt.MantaSolver):
     def __init__(self, width, height, depth, batches = 1, dt = 1):
         mt.MantaSolver.__init__(self, width, height, depth, batches, dt) 
         
+        
+    def createEmptyDensityArray(self):
+        return np.empty((self.batches, self.width, self.height, self.depth, 1), dtype=np.float32)
+    
+    def createEmptyVelocityArray(self):
+        return np.empty((self.batches, self.width, self.height, self.depth, 3), dtype=np.float32)
+    
+    def createEmptyFlagsArray(self):
+        return np.empty((self.batches, self.width, self.height, self.depth, 1), dtype=np.int32)
+        
+        
     def setDensityValue(self, value):
-        for i in range(self.densityGrid.size):
-            self.densityGrid.flat[i] = value
+        array = self.createEmptyDensityArray()
+        for i in range(array.size):
+            array.flat[i] = value
+        self.applyDensityArray(array)
         
     def randomizeDensity(self):
-        randomizeFloatArray(self.densityGrid)
+        array = self.createEmptyDensityArray()
+        randomizeFloatArray(array)
+        self.applyDensityArray(array)
         
     def randomizeVelocity(self):
-        randomizeFloatArray(self.velocityGrid)
+        array = self.createEmptyVelocityArray()
+        randomizeFloatArray(array)
+        self.applyVelocityArray(array)
     
     def pseudoRandomizeDensity(self):
+        array = self.createEmptyDensityArray()
         for b in range(self.batches):
             for x in range(self.width):
                 for y in range(self.height):
                     for z in range(self.depth):
-                            self.densityGrid[b, x, y, z] = x + y*10 + z*100
+                            array[b, x, y, z] = x + y*10 + z*100
+        self.applyDensityArray(array)
         
     def pseudoRandomizeVelocity(self):
+        array = self.createEmptyVelocityArray()
         for b in range(self.batches):
             for x in range(self.width):
                 for y in range(self.height):
                     for z in range(self.depth):
-                            self.velocityGrid[b, x, y, z, 0] = float(x) / (self.width - 1)
-                            self.velocityGrid[b, x, y, z, 1] = float(y) / (self.height - 1)
-                            self.velocityGrid[b, x, y, z, 2] = float(z) / (self.depth - 1)
+                            array[b, x, y, z, 0] = float(x) / (self.width - 1)
+                            array[b, x, y, z, 1] = float(y) / (self.height - 1)
+                            array[b, x, y, z, 2] = float(z) / (self.depth - 1)
+        self.applyVelocityArray(array)
                             
                             
     def pseudoRandomizeVelocityX(self):
+        array = self.createEmptyVelocityArray()
         for b in range(self.batches):
             for x in range(self.width):
                 for y in range(self.height):
                     for z in range(self.depth):
-                            self.velocityGrid[b, x, y, z, 0] = 1
-                            self.velocityGrid[b, x, y, z, 1] = 0
-                            self.velocityGrid[b, x, y, z, 2] = 0
+                            array[b, x, y, z, 0] = 1
+                            array[b, x, y, z, 1] = 0
+                            array[b, x, y, z, 2] = 0
+        self.applyVelocityArray(array)
         
     def randomizeFlags(self):
+        array = self.createEmptyFlagsArray()
         for i in range(array.size):
             array.flat[i] = random.randint(1, 2)
+        self.applyFlagArray(array)
 
 
 
 
 def prepareMantaArray(array, batch = 0):
-    arrayShape =array.shape
+    arrayShape = array.shape
     if(len(arrayShape) == 4):                           # scalar array
         resultArray = np.empty([arrayShape[3], arrayShape[2], arrayShape[1]], np.result_type(array))
         for x in range(arrayShape[1]):
@@ -77,6 +103,8 @@ def prepareMantaArray(array, batch = 0):
                     for i in range(arrayShape[4]):
                         resultArray[y, x, z, i] = array[batch, x, y, z, i]
         return resultArray
+
+
 
 def getL2Error(array1, array2):
     assert array1.shape == array2.shape, "Could not evalute L2 error between arrays because of different shapes %s vs %s" % (str(array1.shape), str(array2.shape))
