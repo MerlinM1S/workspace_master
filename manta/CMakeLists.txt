@@ -142,6 +142,7 @@ SET(SOURCES
 	source/preprocessor/merge.cpp
 	source/preprocessor/codegen_python.cpp
 	source/preprocessor/codegen_kernel.cpp
+	source/preprocessor/codegen_tensor.cpp
 )
 add_executable(prep ${SOURCES})
 if (NOT WIN32)

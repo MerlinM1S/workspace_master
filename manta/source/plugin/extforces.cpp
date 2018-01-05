@@ -71,7 +71,7 @@ KERNEL(bnd=1) void KnAddBuoyancy(FlagGrid& flags, Grid<Real>& factor, MACGrid& v
 }
 
 //! add Buoyancy force based on fctor (e.g. smoke density)
-PYTHON() void addBuoyancy(FlagGrid& flags, Grid<Real>& density, MACGrid& vel, Vec3 gravity, Real coefficient=1.) {
+TPYTHON() void addBuoyancy(FlagGrid& flags, Grid<Real>& density, MACGrid& vel, Vec3 gravity, Real coefficient=1.) {
 	Vec3 f = -gravity * flags.getParent()->getDt() / flags.getParent()->getDx() * coefficient;
 	KnAddBuoyancy(flags,density, vel, f);
 }

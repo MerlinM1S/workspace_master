@@ -245,7 +245,7 @@ Class parseClass(TokenPointer& parentPtr) {
 }
 
 // Parse syntax KEYWORD(opt1, opt2, ...) STATEMENTS [ {} or ; ]    
-void parseBlock(const string& kw, const vector<Token>& tokens, const Class* parent, Sink& sink, vector<Instantiation>& inst) {
+void parseBlock(const BlockType blockType, const vector<Token>& tokens, const Class* parent, Sink& sink, vector<Instantiation>& inst) {
 	Block block = Block();
 	block.parent = parent;
 	TokenPointer tk(tokens, &block);
@@ -254,7 +254,7 @@ void parseBlock(const string& kw, const vector<Token>& tokens, const Class* pare
 	if (tk.curType() == TkBracketL)
 		block.options = parseArgumentList(tk, true, false);
 
-	if (kw == "KERNEL") {
+        if (blockType == BlockTypeKernel) {
 		List<Type> templTypes;
 
 		// templated kernel
@@ -283,7 +283,7 @@ void parseBlock(const string& kw, const vector<Token>& tokens, const Class* pare
 		block.line1 = tk.cur().line;
 		processKernel(block, tk.cur().text, sink);
 	}
-	else if (kw == "PYTHON")
+        else if (blockType == BlockTypePython || blockType == BlockTypeTPython)
 	{
 		// template instantiation / alias
 		if (tk.curType() == TkDescriptor && (tk.cur().text == "alias" || tk.cur().text == "instantiate"))  {
@@ -349,6 +349,10 @@ void parseBlock(const string& kw, const vector<Token>& tokens, const Class* pare
 				tkAssert((tk.curType() == TkCodeBlock || tk.curType() == TkSemicolon) && tk.isLast(), 
 					"malformed preprocessor keyword block. Expected 'PYTHON type funcname(args) [{}|;]'");
 				processPythonFunction(block, tk.cur().text, sink, inst);
+
+                                if(blockType == BlockTypeTPython) {
+                                    processTensorFunction(block, tk.cur().text, sink, inst);
+                                }
 			}
 		}
 

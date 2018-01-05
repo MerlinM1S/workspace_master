@@ -8,6 +8,8 @@ manta_add_buoyancy = manta_add_buoyancy_module.add_buoyancy
 manta_advection_module = tf.load_op_library('/home/ansorge/tensorflow/bazel-bin/tensorflow/core/mantatensor/advection.so')
 manta_advection = manta_advection_module.advection
 
+manta_apply_to_array_module = tf.load_op_library('/home/ansorge/tensorflow/bazel-bin/tensorflow/core/mantatensor/apply_to_array.so')
+manta_apply_to_array = manta_apply_to_array_module.apply_to_array
 
 class MantaSolver:
     def __init__(self, width, height, depth, batches, dt = 1):
@@ -42,15 +44,22 @@ class MantaSolver:
         
     def addBuoyancy(self, force, coefficient = 1):
         tForce = np.multiply (np.array(force), -1 * self.getDt() / self.getDx() * coefficient).tolist();
-        self.sess.run(manta_add_buoyancy(self.velocityTensor, self.flagsTensor, self.densityTensor, tForce))
+        #self.sess.run(manta_add_buoyancy(self.velocityTensor, self.flagsTensor, self.densityTensor, tForce))
+        step = tf.group(self.velocityTensor.assign(manta_add_buoyancy(self.velocityTensor, self.flagsTensor, self.densityTensor, tForce)))
+        self.sess.run(step)
         
     def advectSemiLagrangeDensity(self, orderSpace = 1):
-        self.densityGrid = manta_advection(self.densityTensor, self.flagsTensor, self.velocityTensor, self.dt, orderSpace).eval()
+        step = tf.group(self.densityTensor.assign(manta_advection(self.densityTensor, self.flagsTensor, self.velocityTensor, self.dt, orderSpace)))
+        self.sess.run(step)
         
     def advectSemiLagrangeVelocity(self, orderSpace = 1):
-        self.velocityGrid = manta_advection(self.velocityTensor, self.flagsTensor, self.velocityTensor, self.dt, orderSpace).eval()
-        
-        
+        step = tf.group(self.velocityTensor.assign(manta_advection(self.velocityTensor, self.flagsTensor, self.velocityTensor, self.dt, orderSpace)))
+        self.sess.run(step)
+    
+    def applyInflow(self, mask, value):
+        step = tf.group(self.densityTensor.assign(manta_apply_to_array(self.densityTensor, self.flagsTensor, mask, value)))
+        self.sess.run(step)
+
         
     ## Setter
     def applyVelocityArray(self, velocityArray):

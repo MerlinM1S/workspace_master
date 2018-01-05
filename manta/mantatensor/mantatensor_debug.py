@@ -4,6 +4,10 @@ import numpy as np
 import random
 import mantatensor as mt
 
+from PIL import Image
+
+from manta import *
+
 
 test_empty_module = tf.load_op_library('/home/ansorge/tensorflow/bazel-bin/tensorflow/core/mantatensor/test_empty.so')
 test_empty = test_empty_module.test_empty
@@ -84,6 +88,63 @@ class MantaSolverTest(mt.MantaSolver):
         self.applyFlagArray(array)
 
 
+def createImage(name, array, slice, batch = 0, scale = 1):
+    arrayShape = array.shape
+    
+    width = arrayShape[1]
+    height = arrayShape[2]
+        
+    im = Image.new("RGB", (width, height))
+    pix = im.load()
+    
+    if(arrayShape[4] == 1):
+        for x in range(width):
+            for y in range(height):
+                val = array[batch, x, y, slice]
+                pix[x, height - y - 1] = (int(val*255), int(val*255), int(val*255))    
+    if(arrayShape[4] == 3):
+        for x in range(width):
+            for y in range(height):
+                pix[x, height - y - 1] = (int(array[batch, x, y, slice, 0]*255), int(array[batch, x, y, slice, 1]*255), int(array[batch, x, y, slice, 2]*255))
+
+    im.save("tensor_" +name + ".png", "PNG")
+    
+    
+def createImageGrid(name, grid, width, height, slice, batch = 0, scale = 1):        
+    im = Image.new("RGB", (width, height))
+    pix = im.load()
+    
+    if(isinstance(grid, RealGrid)):      
+        for x in range(width):
+            for y in range(height):
+                val = grid.getValue(x, y, slice)
+                pix[x, height - y - 1] =  (int(val*255), int(val*255), int(val*255))
+    if(isinstance(grid, MACGrid)):     
+        for x in range(width):
+            for y in range(height):
+                vec = grid.getValue(x, y, slice)
+                pix[x, height - y - 1] =  (int(vec.x*255), int(vec.y*255), int(vec.z*255))
+
+    im.save("flow_" + name + ".png", "PNG")
+    
+    
+def createImageBool(name, array, slice, scale = 1):
+    arrayShape = array.shape
+    
+    width = arrayShape[0]
+    height = arrayShape[1]
+        
+    im = Image.new("RGB", (width, height))
+    pix = im.load()
+    for x in range(width):
+        for y in range(height):
+            if(array[x, y, slice]):
+                pix[x,y] = (255, 255, 255)
+            else:
+                pix[x,y] = (0, 0, 0)
+            
+
+    im.save( name + ".png", "PNG")
 
 
 def prepareMantaArray(array, batch = 0):

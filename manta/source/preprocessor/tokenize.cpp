@@ -78,7 +78,7 @@ void TokenPointer::errorMsg(const string& msg) {
 // Lexing functions
 
 // tokenize and parse until keyword section ends
-void tokenizeBlock(vector<Token>& tokens, const string& kw, const string& text, size_t& i, int& line, bool& hasBrackets) {
+void tokenizeBlock(vector<Token>& tokens, BlockType blockType, const string& text, size_t& i, int& line, bool& hasBrackets) {
 	tokens.push_back(Token(TkWhitespace, line));
 	BracketStack brackets;
 		
@@ -187,7 +187,7 @@ void tokenizeBlock(vector<Token>& tokens, const string& kw, const string& text, 
 		
 		// track symbol tokens
 		else if (c==' ' || c=='\t' || c=='\n') {
-			tokens.push_back(Token(TkWhitespace, line, c));
+                        tokens.push_back(Token(TkWhitespace, line, c));
 		}
 		else if (c==',') {
 			tokens.push_back(Token(TkComma, line, c));
@@ -235,7 +235,7 @@ void tokenizeBlock(vector<Token>& tokens, const string& kw, const string& text, 
 	}
 	
 	// EOF before block end ?
-	errMsg(line, "EOF before block for keyword '" + kw + "' was closed.");
+        errMsg(line, "EOF before block for keyword '" + ToString(blockType) + "' was closed.");
 	
 	return;
 }
@@ -343,20 +343,28 @@ void processText(const string& text, int baseline, Sink& sink, const Class* pare
 			if (isNameChar(c))
 				word += c;
 			else {
-				if (word == "KERNEL" || word == "PYTHON") {
-					vector<Token> tokens;
-					bool brackets = false;
-					tokenizeBlock(tokens, word, text, i, line, brackets);
-					if(!brackets) {
-						errMsg(line, "KERNEL and PYTHON keywords must have \"()\" ");
-					}
-					convertKeywords(tokens);
-					parseBlock(word, tokens, parent, sink, inst); 
-				} else {
-					newText << word;                    
-					newText << c; 
-				}
-				word = "";         
+                                BlockType blockType = BlockTypeNone;
+                                if (word == "KERNEL")
+                                    blockType = BlockTypeKernel;
+                                if(word == "PYTHON")
+                                    blockType = BlockTypePython;
+                                if(word == "TPYTHON")
+                                    blockType = BlockTypeTPython;
+
+                                if(blockType != BlockTypeNone) {
+                                        vector<Token> tokens;
+                                        bool brackets = false;
+                                        tokenizeBlock(tokens, blockType, text, i, line, brackets);
+                                        if(!brackets) {
+                                                errMsg(line, "KERNEL and PYTHON keywords must have \"()\" ");
+                                        }
+                                        convertKeywords(tokens);
+                                        parseBlock(blockType, tokens, parent, sink, inst);
+                                } else {
+                                        newText << word;
+                                        newText << c;
+                                }
+                                word = "";
 			}
 		}
 	}
