@@ -11,13 +11,27 @@
 
 class TType {
 public:
-    string hName;              // header type name
-    string pName;              // paramter type name
+    string cName;
+    string name;            // type name
+    string hName;           // header type name
     bool isConst;
+    int promisedDims;
+
+
+    string pName;           // paramter type name
+
+
+    bool isScalar() {
+        return promisedDims == 0;
+    }
 
     TType() { }
 
-    TType(string _hName, string _pName, bool _isConst) : hName(_hName), pName(_pName), isConst(_isConst) { }
+    TType(string _cName, string _name, string _hName, bool _isConst, int _promisedDims) : cName(_cName), name(_name), hName(_hName), isConst(_isConst), promisedDims(_promisedDims) {
+        pName = name;
+        if(!isScalar())
+            pName += "*";
+    }
 };
 
 class TArgument {
@@ -28,6 +42,7 @@ public:
     int inIndex;
     int outIndex;
 
+
     TArgument(const Argument* _argument) : argument(_argument){
         inIndex = -1;
         outIndex = -1;
@@ -35,13 +50,13 @@ public:
 
 
         std::map<std::string, TType> typeConverter;
-        typeConverter["MACGrid"] = TType("float", "float*", false);
-        typeConverter["FlagGrid"] = TType("int32", "int*", false);
-        typeConverter["Grid"] = TType("float", "float*", false);
-        typeConverter["Vec3"] = TType("float", "float*", true);
-        typeConverter["Real"] = TType("float", "float", true);
-        typeConverter["int"] = TType("int32", "int", true);
-        typeConverter["float"] = TType("float", "float", true);
+        typeConverter["MACGrid"]    = TType("MACGrid",  "float",  "float", false,   5);
+        typeConverter["FlagGrid"]   = TType("FlagGrid", "int",    "int32", false,   4);
+        typeConverter["Grid"]       = TType("Grid",     "float",  "float", false,   4);
+        typeConverter["Vec3"]       = TType("Vec3",     "float",  "float", true,    2);
+        typeConverter["Real"]       = TType("float",    "float",  "float", true,    1);
+        typeConverter["int"]        = TType("int",      "int",    "int32", true,    1);
+        typeConverter["float"]      = TType("float",    "float",  "float", true,    1);
 
 
         if (typeConverter.find(argument->type.name) != typeConverter.end()) {
@@ -59,6 +74,30 @@ public:
 
     string getOutputName() {
         return "out_" + argument->name;
+    }
+
+    string getInTensorName() {
+        return getInputName() + "_tensor";
+    }
+
+    string getOutTensorName() {
+        return getOutputName() + "_tensor";
+    }
+
+    string generateDimSizeLines() {
+        string text;
+
+        string dimNames[5] = {"batches", "width", "height", "depth", "dim"};
+        for(int i = 0; i < 5; i++) {
+            text += "\t\tlong " + dimNames[i] + " = ";
+
+            if(tType.promisedDims > i)
+               text += getInTensorName() + ".shape().dim_size(" + SSTR(i) + ")\r\n";
+            else
+               text += "-1;\r\n";
+        }
+
+        return text;
     }
 
     string generateInputLine() {
@@ -82,23 +121,100 @@ public:
             return "\t\tc->set_output(" + SSTR(outIndex) + ", c->input(" + SSTR(inIndex) + "));" + "\r\n";
     }
 
-    string generateInParameter() {
+    string generateInHeaderParam() {
         if(inIndex < 0)
             return "";
         else
             return "const " + tType.pName + " " + getInputName() + ", ";
     }
 
-    string generateOutParameter() {
+    string generateOutHeaderParam() {
         if(outIndex < 0)
             return "";
         else
             return tType.pName + " " + getOutputName() + ", ";
     }
 
-    string generateParameter() {
-        return generateInParameter() + generateOutParameter();
+    string generateHeaderParam() {
+        return generateInHeaderParam() + generateOutHeaderParam();
     }
+
+    string generateInTensorLines() {
+        string text = "";
+        if(inIndex >= 0) {
+            text += "\t\tconst Tensor& " + getInTensorName() + " = context->input(" + SSTR(inIndex) + ");\r\n";
+
+            if(tType.isScalar()) {
+                text += "\t\tconst " + tType.pName + " " + getInputName() + " = " + getInTensorName() + ".scalar<" + tType.name + ">().data()[0];\r\n";
+            } else {
+                text += "\t\tconst " + tType.pName + " " + getInputName() + " = " + getInTensorName() + ".flat<" + tType.name + ">().data();\r\n";
+            }
+
+            text += "\r\n";
+        }
+        return text;
+    }
+
+    string generateOutTensorLines() {
+        string text = "";
+        if(outIndex >= 0) {
+            text += "\t\tTensor* " + getOutTensorName() + " = NULL;\r\n";
+            text += "\t\tOP_REQUIRES_OK(context, context->allocate_output(" + SSTR(outIndex) + ", " + getInTensorName() + ".shape(), &" + getOutTensorName() + "));\r\n";
+            text += "\t\t" + tType.pName + " " + getOutputName() + " = " + getOutTensorName() + ".flat<" + tType.name + ">().data();\r\n";
+            text += "\r\n";
+        }
+        return text;
+    }
+
+
+    string generateInParam() {
+        if(inIndex < 0)
+            return "";
+        else
+            return getInputName() + ", ";
+    }
+
+    string generateOutParam() {
+        if(outIndex < 0)
+            return "";
+        else
+            return getOutputName() + ", ";
+    }
+
+    string generateParam() {
+        return generateInParam() + generateOutParam();
+    }
+
+
+    string generateCopyInToOutLines() {
+        string text = "";
+
+        if(outIndex >= 0 && inIndex >= 0) {
+            text += "\tfor(int i = 0; i < dimSize.LengthOf(" + SSTR(tType.promisedDims) + "); i++) {\r\n";
+            text += "\t\t" + getOutputName() + "[i] = " + getInputName() + "[i];\r\n";
+            text += "\t}\r\n";
+            text += "\r\n";
+        }
+
+        return text;
+    }
+
+    string generateVariableLine(string batch) {
+        string text;
+
+        text +=  tType.cName + " " +  argument->name + " = ";
+
+        if(tType.promisedDims == 1) {
+            text += "*";
+        } else {
+            text += tType.cName;
+        }
+
+        text += "(" + getOutputName() + "[" + batch + "]);\r\n";
+
+        return text;
+    }
+
 };
 
 string convertToSnake_case(string camelCase) {
@@ -122,7 +238,9 @@ class TensorProcessor {
 private:
     string funcName;
 
-    List<TArgument> tArguments;
+    List<TArgument*> tArguments;
+
+    TArgument* argumentWithHighestDims;
 
     string func_name() {
         return convertToSnake_case(funcName);
@@ -136,21 +254,55 @@ private:
         return funcName + "_OP";
     }
 
+    enum DeviceType {
+        DeviceTypeGeneral, DeviceTypeCPU, DeviceTypeGPU
+    };
+
+    string generateFuncHeader(DeviceType deviceType) {
+        string text;
+
+
+        string deviceName;
+        switch(deviceType) {
+        case DeviceTypeGeneral:
+            deviceName = "Device";
+            break;
+        case DeviceTypeCPU:
+            deviceName = "CPUDevice";
+            break;
+        case DeviceTypeGPU:
+            deviceName = "GPUDevice";
+            break;
+        }
+
+
+        switch(deviceType) {
+        case DeviceTypeGeneral:
+            text += "template <typename Device>\r\n";
+            text += "struct " + funcName_Functor() + " {\r\n";
+            text += "\tvoid operator()(const Device& d, ";
+            break;
+        case DeviceTypeCPU:
+        case DeviceTypeGPU:
+            text += "template <>\r\n";
+            text += "void " + funcName_Functor() + "<" + deviceName + ">::operator()(const " + deviceName + "& d, ";
+            break;
+        }
+
+        text += "const DimSize dimSize, ";
+        for(unsigned int i = 0; i < tArguments.size(); i++) {
+            text += tArguments[i]->generateHeaderParam();
+        }
+        text = text.substr(0, text.size() - 2);            // Remove last ", "
+        text += ")";
+
+        return text;
+    }
+
     string generateHeader() {
         string text;
 
-        text += "template <typename Device>\r\n";
-        text += "struct " + funcName_Functor() + " {\r\n";
-        {
-            string func_header = "\tvoid operator()(const Device& d, ";
-            for(unsigned int i = 0; i < tArguments.size(); i++) {
-                func_header += tArguments[i].generateParameter();
-            }
-            func_header = func_header.substr(0, func_header.size() - 2);            // Remove last ", "
-            func_header += ");";
-
-            text += func_header + "\r\n";
-        }
+        text += generateFuncHeader(DeviceTypeGeneral) + ";\r\n";
         text += "};\r\n";
 
         return text;
@@ -162,21 +314,95 @@ private:
         text += "Register_OP(\"" + funcName + "\")\r\n";
 
         for(unsigned int i = 0; i < tArguments.size(); i++) {
-            text += tArguments[i].generateInputLine();
+            text += tArguments[i]->generateInputLine();
         }
 
         for(unsigned int i = 0; i < tArguments.size(); i++) {
-            text += tArguments[i].generateOutputLine();
+            text += tArguments[i]->generateOutputLine();
         }
 
         {
             text += "\t.SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {\r\n";
             for(unsigned int i = 0; i < tArguments.size(); i++) {
-                text += tArguments[i].generateShapeInferenceLine();
+                text += tArguments[i]->generateShapeInferenceLine();
             }
             text += "\t\treturn Status::OK();\r\n";
             text += "\t});\r\n";
         }
+
+        return text;
+    }
+
+    string generateFuncImplementationCPU() {
+        string text;
+
+        text += generateFuncHeader(DeviceTypeCPU) + " {\r\n";
+
+
+        for(unsigned int i = 0; i < tArguments.size(); i++) {
+            text += tArguments[i]->generateCopyInToOutLines();
+        }
+
+
+        text += "\tfor(int i_b = 0; i_b < dimSize.batches; i_b++) {\r\n";
+        for(unsigned int i = 0; i < tArguments.size(); i++) {
+            text += "\t\t" + tArguments[i]->generateVariableLine("i_b");
+        }
+
+        text += "\t}\r\n";
+
+
+
+        text += "}\r\n";
+
+        return text;
+    }
+
+
+    string generateFuncOP() {
+        string text;
+
+        text += "class " + funcName_OP() + " : public OpKernel {\r\n";
+        text += "public:\r\n";
+        text += "\texplicit func_nameOp(OpKernelConstruction* context) : OpKernel(context) {}\r\n";
+        text += "\r\n";
+        text += "\tvoid Compute(OpKernelContext* context) override {\r\n";
+
+        // InTensor
+        for(unsigned int i = 0; i < tArguments.size(); i++) {
+            text += tArguments[i]->generateInTensorLines();
+        }
+
+        // OutTensor
+        for(unsigned int i = 0; i < tArguments.size(); i++) {
+            text += tArguments[i]->generateOutTensorLines();
+        }
+
+
+        // DimSize
+        text += argumentWithHighestDims->generateDimSizeLines();
+        text += "\t\tDimSize dimSize = DimSize(batches, width, depth, height, dims);\r\n";
+        text += "\r\n";
+
+        // Function call
+        {
+            string funcCall;
+            funcCall += "\t\t" + funcName_Functor() + "<Device>()(\r\n";
+            funcCall += "\t\t\tcontext->eigen_device<Device>(), \r\n";
+            funcCall += "\t\t\tdimSize, \r\n";
+
+            funcCall += "\t\t\t";
+            for(unsigned int i = 0; i < tArguments.size(); i++) {
+                funcCall += tArguments[i]->generateParam();
+            }
+            funcCall = funcCall.substr(0, funcCall.size() - 2);            // Remove last ", "
+
+            text += funcCall + ");\r\n";
+        }
+
+
+        text += "\t}\r\n";
+        text += "}\r\n";
 
         return text;
     }
@@ -201,20 +427,28 @@ public:
     TensorProcessor(const Block& block, const std::string& code, Sink& sink, std::vector<Instantiation>& inst) {
         funcName = block.func.name;
 
+        argumentWithHighestDims = 0;
+        int highestDims = -1;
+
         {
             int inIndex = 0;
             int outIndex = 0;
             for(unsigned int i = 0; i < block.func.arguments.size(); i++) {
-                TArgument argument = TArgument(&(block.func.arguments[i]));
+                TArgument* argument = new TArgument(&(block.func.arguments[i]));
 
-                argument.inIndex = inIndex;
+                argument->inIndex = inIndex;
                 inIndex++;
-                if(!argument.isTypeConst()) {
-                    argument.outIndex = outIndex;
+                if(!argument->isTypeConst()) {
+                    argument->outIndex = outIndex;
                     outIndex++;
                 }
 
                 tArguments.push_back(argument);
+
+                if(argument->tType.promisedDims > highestDims) {
+                    highestDims = argument->tType.promisedDims ;
+                    argumentWithHighestDims = argument;
+                }
             }
         }
     }
@@ -232,14 +466,30 @@ public:
         outfile << std::endl;
         outfile << std::endl;
 
+        outfile << generateFuncImplementationCPU();
+
+        outfile << std::endl;
+        outfile << std::endl;
+
+        outfile << generateFuncOP();
+
+        outfile << std::endl;
+        outfile << std::endl;
+
         outfile << generateRegisterKernelCPU();
 
-        outfile << std::endl;
-        outfile << std::endl;
+//        outfile << std::endl;
+//        outfile << std::endl;
 
-        outfile << generateRegisterKernelGPU();
+//        outfile << generateRegisterKernelGPU();
 
         outfile.close();
+    }
+
+    ~TensorProcessor() {
+        for(unsigned int i = 0; i < tArguments.size(); i++) {
+            delete (tArguments[i]);
+        }
     }
 };
 
