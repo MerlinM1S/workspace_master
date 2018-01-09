@@ -92,7 +92,7 @@ public:
             text += "\t\tlong " + dimNames[i] + " = ";
 
             if(tType.promisedDims > i)
-               text += getInTensorName() + ".shape().dim_size(" + SSTR(i) + ")\r\n";
+               text += getInTensorName() + ".shape().dim_size(" + SSTR(i) + ");\r\n";
             else
                text += "-1;\r\n";
         }
@@ -160,7 +160,7 @@ public:
         if(outIndex >= 0) {
             text += "\t\tTensor* " + getOutTensorName() + " = NULL;\r\n";
             text += "\t\tOP_REQUIRES_OK(context, context->allocate_output(" + SSTR(outIndex) + ", " + getInTensorName() + ".shape(), &" + getOutTensorName() + "));\r\n";
-            text += "\t\t" + tType.pName + " " + getOutputName() + " = " + getOutTensorName() + ".flat<" + tType.name + ">().data();\r\n";
+            text += "\t\t" + tType.pName + " " + getOutputName() + " = " + getOutTensorName() + "->flat<" + tType.name + ">().data();\r\n";
             text += "\r\n";
         }
         return text;
@@ -311,7 +311,7 @@ private:
     string generateRegisterOP() {
         string text;
 
-        text += "Register_OP(\"" + funcName + "\")\r\n";
+        text += "REGISTER_OP(\"" + funcName + "\")\r\n";
 
         for(unsigned int i = 0; i < tArguments.size(); i++) {
             text += tArguments[i]->generateInputLine();
@@ -362,9 +362,10 @@ private:
     string generateFuncOP() {
         string text;
 
+        text += "template <typename Device>\r\n";
         text += "class " + funcName_OP() + " : public OpKernel {\r\n";
         text += "public:\r\n";
-        text += "\texplicit func_nameOp(OpKernelConstruction* context) : OpKernel(context) {}\r\n";
+        text += "\texplicit " + funcName_OP() +"(OpKernelConstruction* context) : OpKernel(context) {}\r\n";
         text += "\r\n";
         text += "\tvoid Compute(OpKernelContext* context) override {\r\n";
 
@@ -381,7 +382,7 @@ private:
 
         // DimSize
         text += argumentWithHighestDims->generateDimSizeLines();
-        text += "\t\tDimSize dimSize = DimSize(batches, width, depth, height, dims);\r\n";
+        text += "\t\tDimSize dimSize = DimSize(batches, width, depth, height, dim);\r\n";
         text += "\r\n";
 
         // Function call
@@ -402,7 +403,7 @@ private:
 
 
         text += "\t}\r\n";
-        text += "}\r\n";
+        text += "};\r\n";
 
         return text;
     }
