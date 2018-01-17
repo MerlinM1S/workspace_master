@@ -57,8 +57,9 @@ void doGenerate(int argc, char* argv[], bool docs) {
 	// only enable in cmake's PREP_DEBUG mode (passed via cmd line option dbg_mode)
 	gDebugMode = atoi(argv[2]) != 0;
 	if (!strcmp(argv[3],"TBB")) gMTType = MTTBB;
-	if (!strcmp(argv[3],"OPENMP")) gMTType = MTOpenMP;
-	
+        if (!strcmp(argv[3],"OPENMP")) gMTType = MTOpenMP;
+        if (!strcmp(argv[3],"TENSOR")) gMTType = MTTensor;
+
 	// load complete file into buffer    
 	gFilename = indir+infile;
 	string text = readFile(gFilename);

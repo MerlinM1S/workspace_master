@@ -190,7 +190,7 @@ public:
         string text = "";
 
         if(outIndex >= 0 && inIndex >= 0) {
-            text += "\tfor(int i = 0; i < dimSize.LengthOf(" + SSTR(tType.promisedDims) + "); i++) {\r\n";
+            text += "\tfor(int i = 0; i < dimSize.lengthOf(" + SSTR(tType.promisedDims) + "); i++) {\r\n";
             text += "\t\t" + getOutputName() + "[i] = " + getInputName() + "[i];\r\n";
             text += "\t}\r\n";
             text += "\r\n";
@@ -237,6 +237,7 @@ string convertToSnake_case(string camelCase) {
 class TensorProcessor {
 private:
     string funcName;
+    string filename;
 
     List<TArgument*> tArguments;
 
@@ -244,6 +245,12 @@ private:
 
     string func_name() {
         return convertToSnake_case(funcName);
+    }
+
+    string FuncName() {
+        string result = funcName;
+        result[0] = toupper(result[0]);
+        return result;
     }
 
     string funcName_Functor() {
@@ -311,7 +318,7 @@ private:
     string generateRegisterOP() {
         string text;
 
-        text += "REGISTER_OP(\"" + funcName + "\")\r\n";
+        text += "REGISTER_OP(\"" + FuncName() + "\")\r\n";
 
         for(unsigned int i = 0; i < tArguments.size(); i++) {
             text += tArguments[i]->generateInputLine();
@@ -409,7 +416,7 @@ private:
     }
 
     string generateRegisterKernelCPU() {
-        return "REGISTER_KERNEL_BUILDER(Name(\"" + funcName + "\").Device(DEVICE_CPU), " + funcName_OP() + "<CPUDevice>);\r\n";
+        return "REGISTER_KERNEL_BUILDER(Name(\"" + FuncName() + "\").Device(DEVICE_CPU), " + funcName_OP() + "<CPUDevice>);\r\n";
     }
 
     string generateRegisterKernelGPU() {
@@ -417,7 +424,7 @@ private:
 
         text += "#if GOOGLE_CUDA\r\n";
         text += "\r\n";
-        text += "REGISTER_KERNEL_BUILDER(Name(\"" + funcName + "\").Device(DEVICE_GPU), " + funcName_OP() + "<GPUDevice>);\r\n";
+        text += "REGISTER_KERNEL_BUILDER(Name(\"" + FuncName() + "\").Device(DEVICE_GPU), " + funcName_OP() + "<GPUDevice>);\r\n";
         text += "\r\n";
         text += "#endif\r\n";
 
@@ -452,11 +459,13 @@ public:
                 }
             }
         }
+
+        filename = sink.getFilename() + "wat";
     }
 
 
     void write() {
-        std::ofstream outfile ("test.txt");
+        std::ofstream outfile (filename.c_str());
 
         outfile << generateHeader();
 

@@ -323,16 +323,16 @@ void parseBlock(const BlockType blockType, const vector<Token>& tokens, const Cl
 			block.cls.prequel(&templText);
 			tkAssert(tk.curType() == TkCodeBlock && tk.isLast(), "malformed preprocessor keyword block. Expected 'PYTHON class name : public X {}'");
 			processPythonClass(block, tk.cur().text, sink, inst);
-		}
+                }
 		else // function or member
-		{
+                {
 			bool isConstructor = parent && tk.curType() == TkDescriptor && 
 				 parent->name == tk.cur().text && tk.previewType() == TkBracketL;
 			block.func = parseFunction(tk, false, !isConstructor, false);
 			block.func.templateTypes = templTypes;
 			block.func.prequel(&templText);
 			
-			if (isConstructor && tk.curType() == TkColon) {
+                        if (isConstructor && tk.curType() == TkColon) {
 				// read till end
 				while(!tk.done() && tk.curType() != TkSemicolon && tk.curType() != TkCodeBlock) {
 					block.initList += tk.cur().text;

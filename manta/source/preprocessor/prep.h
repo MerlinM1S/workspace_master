@@ -26,7 +26,7 @@ enum BlockType {
 };
 
 // from main.cpp
-enum MType { MTNone = 0, MTTBB, MTOpenMP};
+enum MType { MTNone = 0, MTTBB, MTOpenMP, MTTensor};
 extern std::string gFilename;
 extern bool gDebugMode;
 extern MType gMTType;

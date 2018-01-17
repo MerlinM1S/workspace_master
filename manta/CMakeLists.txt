@@ -76,6 +76,9 @@ IF(NOPYTHON)
 	SET(BUILD_STATIC ON)
 ENDIF()
 
+# The following option will generate custom operators files for tensorflow
+OPTION(TENSORFLOW "Compile as tensorflow operator" OFF)
+
 # CUDA is deprecated, and not tested - enable at own risk... (needs cmake version >2.8)
 #OPTION(CUDA "Compile with CUDA plugins" OFF)
 
@@ -124,6 +127,7 @@ MESSAGE(STATUS "Options - "
 	" -DPYTHON_VERSION='${PYTHON_VERSION}' "
 	" -DNUMPY='${NUMPY}' "
 	" -DNOPYTHON='${NOPYTHON}' "
+	" -TENSORFLOW='${TENSORFLOW}' "
 	)
 # " -DCUDA='${CUDA}' "
 MESSAGE(STATUS "Multithreading type : ${MT_TYPE}")
@@ -326,7 +330,7 @@ if(NUMPY)
 endif()
 
 # Multithreading
-if(MT)
+if(MT) 
 	add_definitions( -DMT=1 )
 	if(TBB)
 		# Intel TBB
@@ -388,7 +392,6 @@ if(DOXYGEN_FOUND)
 		COMMENT "Generating API documentation with Doxygen" VERBATIM
 	)
 endif(DOXYGEN_FOUND)
-
 
 
 #******************************************************************************
@@ -488,7 +491,10 @@ ENDIF()
 #******************************************************************************
 # apply preprocessor
 
-set(SOURCES ${NOPP_SOURCES} ${SILENT_SOURCES})
+
+if(NOT TENSORFLOW) 
+    set(SOURCES ${NOPP_SOURCES} ${SILENT_SOURCES})
+endif()
 set(HEADERS ${NOPP_HEADERS})
 set(PP_REGCPP)
 set(PP_REGS)
@@ -497,34 +503,69 @@ set(PREPPED_SOURCES)
 if (PREPDEBUG)
 	set(PP_PREPD "1")
 endif()
-FOREACH(it ${PP_SOURCES} ${PP_HEADERS})
-	get_filename_component(CURPATH ${it} PATH)
-	get_filename_component(CUREXT ${it} EXT)
-	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/${CURPATH}")
-	set(CURPP "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/${it}")
-	string(REPLACE "source/" "" INFILE ${it})
 
-	set(OUTFILES "${CURPP}")
-	if ("${CUREXT}" STREQUAL ".h" OR "${CUREXT}" STREQUAL ".py")
-		IF(NOT NOPYTHON)
-			list(APPEND PP_REGS "${CURPP}.reg")
-			list(APPEND PP_REGCPP "${CURPP}.reg.cpp")
-		ENDIF()
-		set_source_files_properties("${CURPP}.reg.cpp" OBJECT_DEPENDS "${CURPP}")
-		list(APPEND OUTFILES "${CURPP}.reg")
-	ENDIF()
 
-	# preprocessor
-	add_custom_command(OUTPUT ${OUTFILES}
-					COMMAND prep generate ${PP_PREPD} ${MT_TYPE} "${CMAKE_CURRENT_SOURCE_DIR}/source/" "${INFILE}" "${CURPP}"
-					DEPENDS prep
-					IMPLICIT_DEPENDS CXX ${it}
-					WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+IF(TENSORFLOW) 
+    set(TENSORFLOW_DIR CACHE PATH "//The directory containing Tensorflow source.")
+    
+    if(EXISTS "${TENSORFLOW_DIR}/tensorflow/core")
+        set(TENSORFLOW_OUT "${TENSORFLOW_DIR}/tensorflow/core/mantatensor")
+        set(TENSORFLOW_OUT_CPU "${TENSORFLOW_OUT}/MantaCPU")
+    else()
+	MESSAGE(SEND_ERROR "Could not find Tensorflow directory: ${TENSORFLOW_DIR}/tensorflow/core/")
+    endif()
+    
+    file(MAKE_DIRECTORY "${TENSORFLOW_OUT_CPU}")
+    
+    
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/source")
+    FOREACH(it ${PP_SOURCES} ${PP_HEADERS})
+            get_filename_component(CURNAME ${it} NAME)
+            set(CURPP "${TENSORFLOW_OUT_CPU}/${CURNAME}") 
+            string(REPLACE "source/" "" INFILE ${it}) 
+            
+            set(OUTFILES "${CURPP}")
+            
+            EXECUTE_PROCESS(COMMAND "./prep" "generate" ${PP_PREPD} "TENSOR" "${CMAKE_CURRENT_SOURCE_DIR}/source/" "${INFILE}" "${CURPP}")
+    ENDFOREACH(it)
+    
+    FOREACH(it ${NOPP_SOURCES} ${NOPP_HEADERS})
+            get_filename_component(CURNAME ${it} NAME)
+            set(CURPP "${TENSORFLOW_OUT_CPU}/${CURNAME}") 
+    
+            configure_file(${it} "${CURPP}" COPYONLY)
+    ENDFOREACH(it)
+    
+else()
+    FOREACH(it ${PP_SOURCES} ${PP_HEADERS})
+            get_filename_component(CURPATH ${it} PATH)
+            get_filename_component(CUREXT ${it} EXT)
+            file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/${CURPATH}")
+            set(CURPP "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/${it}")
+            string(REPLACE "source/" "" INFILE ${it})
 
-	set_source_files_properties(${OUTFILES} PROPERTIES GENERATED 1)
-	list(APPEND PREPPED_SOURCES ${CURPP})
-ENDFOREACH(it)
-list(APPEND SOURCES ${PREPPED_SOURCES})
+            set(OUTFILES "${CURPP}")
+            if ("${CUREXT}" STREQUAL ".h" OR "${CUREXT}" STREQUAL ".py")
+                    IF(NOT NOPYTHON)
+                            list(APPEND PP_REGS "${CURPP}.reg")
+                            list(APPEND PP_REGCPP "${CURPP}.reg.cpp")
+                    ENDIF()
+                    set_source_files_properties("${CURPP}.reg.cpp" OBJECT_DEPENDS "${CURPP}") 
+                    list(APPEND OUTFILES "${CURPP}.reg")
+            ENDIF() 
+
+            # preprocessor
+            add_custom_command(OUTPUT ${OUTFILES}
+                                            COMMAND prep generate ${PP_PREPD} ${MT_TYPE} "${CMAKE_CURRENT_SOURCE_DIR}/source/" "${INFILE}" "${CURPP}"
+                                            DEPENDS prep
+                                            IMPLICIT_DEPENDS CXX ${it}
+                                            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+            set_source_files_properties(${OUTFILES} PROPERTIES GENERATED 1)
+            list(APPEND PREPPED_SOURCES ${CURPP})
+    ENDFOREACH(it)
+    list(APPEND SOURCES ${PREPPED_SOURCES})
+ENDIF()
 
 # link reg files , for python glue code
 IF(NOT NOPYTHON)
@@ -596,118 +637,121 @@ endif()
 #******************************************************************************
 # setup executable
 
-SET(EXECCMD manta)
+IF(NOT TENSORFLOW)
+    SET(EXECCMD manta)
 
-SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${F_LINKADD} ")
-SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${F_LINKADD} ")
+    SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${F_LINKADD} ")
+    SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${F_LINKADD} ")
 
-include_directories( ${INCLUDE_PATHS})
-link_directories( ${F_LIB_PATHS} )
+    include_directories( ${INCLUDE_PATHS})
+    link_directories( ${F_LIB_PATHS} )
+        
+        
 
-IF(NOT NOPYTHON)
-	# build regular executable
+    IF(NOT NOPYTHON)
+            # build regular executable
 
-	if(CUDA)
-		#cuda_include_directories(pp/source/cuda)
-		cuda_add_executable( ${EXECCMD} ${SOURCES})
-		target_link_libraries( ${EXECCMD} ${F_LIBS} )
-		cuda_build_clean_target()
-	else()
-		if (WIN32)
-			# make nice folders for Visual Studio
-			set_source_files_properties(${PP_SOURCES} ${PP_HEADERS} ${NOPP_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
-			add_executable(${EXECCMD} ${SOURCES} ${PP_SOURCES} ${PP_HEADERS})
-			source_group(Generated FILES ${SOURCES} ${HEADERS})
-		else()
-			add_executable(${EXECCMD} ${SOURCES} ${GITINFO})
-		endif()
-		target_link_libraries( ${EXECCMD} ${F_LIBS} )
-	endif()
+            if(CUDA)
+                    #cuda_include_directories(pp/source/cuda)
+                    cuda_add_executable( ${EXECCMD} ${SOURCES})
+                    target_link_libraries( ${EXECCMD} ${F_LIBS} )
+                    cuda_build_clean_target()
+            else()
+                    if (WIN32)
+                            # make nice folders for Visual Studio
+                            set_source_files_properties(${PP_SOURCES} ${PP_HEADERS} ${NOPP_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
+                            add_executable(${EXECCMD} ${SOURCES} ${PP_SOURCES} ${PP_HEADERS})
+                            source_group(Generated FILES ${SOURCES} ${HEADERS})
+                    else()
+                            add_executable(${EXECCMD} ${SOURCES} ${GITINFO})
+                    endif()
+                    target_link_libraries( ${EXECCMD} ${F_LIBS} )
+            endif()
 
-	# fix for "el capitan" TBB and changed dynamic library env vars, lookup of TBB can cause problems without @rpath
-	IF(APPLE)
-		EXEC_PROGRAM(uname ARGS -v  OUTPUT_VARIABLE OSX_VERSION)
-		STRING(REGEX MATCH "[0-9]+" OSX_VERSION ${OSX_VERSION})
-		IF (OSX_VERSION GREATER 14)
-			ADD_CUSTOM_COMMAND(TARGET manta   POST_BUILD COMMAND 
-				${CMAKE_INSTALL_NAME_TOOL} -change libtbb.dylib @rpath/libtbb.dylib $<TARGET_FILE:manta> )
-		ENDIF()
-	ENDIF()
+            # fix for "el capitan" TBB and changed dynamic library env vars, lookup of TBB can cause problems without @rpath
+            IF(APPLE)
+                    EXEC_PROGRAM(uname ARGS -v  OUTPUT_VARIABLE OSX_VERSION)
+                    STRING(REGEX MATCH "[0-9]+" OSX_VERSION ${OSX_VERSION})
+                    IF (OSX_VERSION GREATER 14)
+                            ADD_CUSTOM_COMMAND(TARGET manta   POST_BUILD COMMAND 
+                                    ${CMAKE_INSTALL_NAME_TOOL} -change libtbb.dylib @rpath/libtbb.dylib $<TARGET_FILE:manta> )
+                    ENDIF()
+            ENDIF()
 
-ELSEIF(BUILD_STATIC)
-	# only build static library in nopython mode
-	SET(EXECCMD manta_static)
-	# only build static library, e.g. for nopython mode
-	ADD_LIBRARY (core OBJECT ${SOURCES} ${GITINFO})
-	ADD_LIBRARY (${EXECCMD} STATIC $<TARGET_OBJECTS:core>)
+    ELSEIF(BUILD_STATIC)
+            # only build static library in nopython mode
+            SET(EXECCMD manta_static)
+            # only build static library, e.g. for nopython mode
+            ADD_LIBRARY (core OBJECT ${SOURCES} ${GITINFO})
+            ADD_LIBRARY (${EXECCMD} STATIC $<TARGET_OBJECTS:core>)
+    ENDIF()
+
+    # gcc compiler flags  
+    IF(NOT WIN32)
+            IF(DEBUG)
+                    # stricter: no optimizations and inlining
+                    set_target_properties(${EXECMD} PROPERTIES COMPILE_FLAGS " -O0 -fno-inline -Wall ")
+            ELSE()
+                    # non-debug, optimized version
+                    set_target_properties(${EXECMD} PROPERTIES COMPILE_FLAGS " -O3 -Wall ")
+            ENDIF()
+    ENDIF()
+
+    # use c++11 for all pre-processed c++ sources
+    include(CheckCXXCompilerFlag)
+    CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+    CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+    SET(CPP11_FLAG " ")
+    if(COMPILER_SUPPORTS_CXX11)
+            SET(CPP11_FLAG " -std=c++11 ")
+            set_source_files_properties(${PREPPED_SOURCES} ${PP_REGCPP} PROPERTIES COMPILE_FLAGS ${CPP11_FLAG})
+            add_definitions(-DMANTA_WITHCPP11=1)
+    elseif(COMPILER_SUPPORTS_CXX0X)
+            SET(CPP11_FLAG " -std=c++0x ")
+            set_source_files_properties(${PREPPED_SOURCES} ${PP_REGCPP} PROPERTIES COMPILE_FLAGS  ${CPP11_FLAG})
+            add_definitions(-DMANTA_WITHCPP11=1)
+    endif()
+
+    # necessary for newer LLVM clang versions, to prevent abundance of "Namify" template warnings... for compatibility disable unknown warnings
+    IF(APPLE)
+            set_source_files_properties(${PP_REGCPP} ${PREPPED_SOURCES} ${NOPP_SOURCES} PROPERTIES COMPILE_FLAGS " -Wno-undefined-var-template  -Wno-unknown-warning-option ${CPP11_FLAG}" )
+            if(GUI)
+                    set_source_files_properties(${MOC_OUTFILES} PROPERTIES COMPILE_FLAGS " -Wno-undefined-var-template  -Wno-unknown-warning-option ${CPP11_FLAG}" )
+            ENDIF()
+    ENDIF()
+
+    # python debugging
+    IF(DEBUG_PYTHON_WITH_RELEASE) 
+            add_definitions(-DDEBUG_PYTHON_WITH_RELEASE=1)
+    ENDIF()
+
+    # MSVC compiler settings
+    IF(WIN32)
+            # get rid of some MSVC warnings
+            add_definitions( /wd4018 /wd4146 /wd4800 )
+
+            # for zlib
+            add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+            add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
+
+            # unsigned to signed conversions
+            add_definitions( /wd4267 )
+            # double <> single precision
+            add_definitions( /wd4244 /wd4305 )
+            # disable warnings for unsecure functions
+            add_definitions( /D "_CRT_SECURE_NO_WARNINGS" )
+
+            if (BLENDER)
+                    set(CMAKE_CXX_FLAGS_DEBUG          "/MTd /Od /Ob0 /D_DEBUG /D PLATFORM_WINDOWS /Zi /RTC1  " )
+                    set(CMAKE_CXX_FLAGS_MINSIZEREL     "/MT /O1 /Ob1 /D NDEBUG /D PLATFORM_WINDOWS            " )
+                    set(CMAKE_CXX_FLAGS_RELEASE        "/MT /O2 /Ob2 /D NDEBUG /D PLATFORM_WINDOWS            " )
+                    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MT /O2 /Ob1 /D NDEBUG /D PLATFORM_WINDOWS /Zi        " )
+            endif()
+
+            # enable when using Qt creator:
+            #add_definitions(/FS)
+    ENDIF()
 ENDIF()
-
-# gcc compiler flags 
-IF(NOT WIN32)
-	IF(DEBUG)
-		# stricter: no optimizations and inlining
-		set_target_properties(${EXECMD} PROPERTIES COMPILE_FLAGS " -O0 -fno-inline -Wall ")
-	ELSE()
-		# non-debug, optimized version
-		set_target_properties(${EXECMD} PROPERTIES COMPILE_FLAGS " -O3 -Wall ")
-	ENDIF()
-ENDIF()
-
-# use c++11 for all pre-processed c++ sources
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-SET(CPP11_FLAG " ")
-if(COMPILER_SUPPORTS_CXX11)
-	SET(CPP11_FLAG " -std=c++11 ")
-	set_source_files_properties(${PREPPED_SOURCES} ${PP_REGCPP} PROPERTIES COMPILE_FLAGS ${CPP11_FLAG})
-	add_definitions(-DMANTA_WITHCPP11=1)
-elseif(COMPILER_SUPPORTS_CXX0X)
-	SET(CPP11_FLAG " -std=c++0x ")
-	set_source_files_properties(${PREPPED_SOURCES} ${PP_REGCPP} PROPERTIES COMPILE_FLAGS  ${CPP11_FLAG})
-	add_definitions(-DMANTA_WITHCPP11=1)
-endif()
-
-# necessary for newer LLVM clang versions, to prevent abundance of "Namify" template warnings... for compatibility disable unknown warnings
-IF(APPLE)
-	set_source_files_properties(${PP_REGCPP} ${PREPPED_SOURCES} ${NOPP_SOURCES} PROPERTIES COMPILE_FLAGS " -Wno-undefined-var-template  -Wno-unknown-warning-option ${CPP11_FLAG}" )
-	if(GUI)
-		set_source_files_properties(${MOC_OUTFILES} PROPERTIES COMPILE_FLAGS " -Wno-undefined-var-template  -Wno-unknown-warning-option ${CPP11_FLAG}" )
-	ENDIF()
-ENDIF()
-
-# python debugging
-IF(DEBUG_PYTHON_WITH_RELEASE) 
-	add_definitions(-DDEBUG_PYTHON_WITH_RELEASE=1)
-ENDIF()
-
-# MSVC compiler settings
-IF(WIN32)
-	# get rid of some MSVC warnings
-	add_definitions( /wd4018 /wd4146 /wd4800 )
-
-	# for zlib
-	add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
-	add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
-
-	# unsigned to signed conversions
-	add_definitions( /wd4267 )
-	# double <> single precision
-	add_definitions( /wd4244 /wd4305 )
-	# disable warnings for unsecure functions
-	add_definitions( /D "_CRT_SECURE_NO_WARNINGS" )
-
-	if (BLENDER)
-		set(CMAKE_CXX_FLAGS_DEBUG          "/MTd /Od /Ob0 /D_DEBUG /D PLATFORM_WINDOWS /Zi /RTC1  " )
-		set(CMAKE_CXX_FLAGS_MINSIZEREL     "/MT /O1 /Ob1 /D NDEBUG /D PLATFORM_WINDOWS            " )
-		set(CMAKE_CXX_FLAGS_RELEASE        "/MT /O2 /Ob2 /D NDEBUG /D PLATFORM_WINDOWS            " )
-		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MT /O2 /Ob1 /D NDEBUG /D PLATFORM_WINDOWS /Zi        " )
-	endif()
-
-	# enable when using Qt creator:
-	#add_definitions(/FS)
-ENDIF()
-
 # print debug summary
 # MESSAGE(STATUS "DEBUG Flag-Summary - Includes: '${INCLUDE_PATHS}' | Libs: '${F_LIBS}' | LibPaths: '${F_LIB_PATHS}' ")
 

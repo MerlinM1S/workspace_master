@@ -71,7 +71,7 @@ Sink::Sink(const string& infile, const string& outfile):
 
 void Sink::write() {
 	writeFile(filename, inplace.str());
-	if (isHeader && !gDocMode) {
+        if (isHeader && !gDocMode && gMTType != MTTensor) {
 		writeFile(filename + ".reg", link.str());
 	}
 }

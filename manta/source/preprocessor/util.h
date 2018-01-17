@@ -45,8 +45,11 @@ struct Sink {
 	std::ostringstream link;
 	bool isHeader;
 	std::string infile;
+        
 private:
 	std::string filename;
+public:
+        std::string getFilename() { return filename; }
 };
 
 // simple string-based stack
