@@ -390,8 +390,8 @@ void processPythonVariable(const Block& block, Sink& sink) {
 	sink.inplace << replaceSet(TmpGetSet, table);
 
 	// register accessors
-	const string reg = replaceSet(TmpRegisterGetSet, table);
-	sink.link << '+' << block.parent->name << '^' << reg << '\n';
+        const string reg = replaceSet(TmpRegisterGetSet, table);
+        sink.link << '+' << block.parent->name << '^' << reg << '\n';
 }
 
 void processPythonClass(const Block& block, const string& code, Sink& sink, vector<Instantiation>& inst) {
@@ -425,7 +425,7 @@ void processPythonClass(const Block& block, const string& code, Sink& sink, vect
 							 "PYNAME", pythonName,
 							 "CTPL", cls.isTemplated() ? "CT" : "",
 							 "" };
-	string reg = replaceSet(TmpRegisterClass, table);
+        string reg = replaceSet(TmpRegisterClass, table);
 	sink.link << '+' << cls.name << '^' << reg << '\n';
 	// instantiate directly if not templated
 	if (!cls.isTemplated())
@@ -472,7 +472,7 @@ void processPythonInstantiation(const Block& block, const Type& aliasType, Sink&
 		}
 	}
 	// otherwise, assume it's a class, and put down a link-time instantiation request
-	if (!isFunction) {
+        if (!isFunction) {
 		sink.link << '>' << aliasType.name << '^' << aliasType.templateTypes.listText << '\n';    
 	}
 }

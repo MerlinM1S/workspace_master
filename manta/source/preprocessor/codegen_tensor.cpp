@@ -6,8 +6,11 @@
 #include <sstream>
 #include <algorithm>
 
+
 #define SSTR( x ) static_cast< std::ostringstream & >( \
         ( std::ostringstream() << std::dec << x ) ).str()
+
+using namespace std;
 
 class TType {
 public:
@@ -265,6 +268,26 @@ private:
         DeviceTypeGeneral, DeviceTypeCPU, DeviceTypeGPU
     };
 
+    string generateIncludesEtc() {
+        string result = "";
+
+        result += "#define EIGEN_USE_THREADS\r\n";
+        result += "\r\n";
+        result += "#if GOOGLE_CUDA\r\n";
+        result += "#define EIGEN_USE_GPU\r\n";
+        result += "#endif\r\n";
+        result += "\r\n";
+        result += "#include \"dim_size.h\"\r\n";
+        result += "\r\n";
+        result += "#include \"tensorflow/core/framework/op.h\"\r\n";
+        result += "#include \"tensorflow/core/framework/shape_inference.h\"\r\n";
+        result += "#include \"tensorflow/core/framework/op_kernel.h\"\r\n";
+        result += "\r\n";
+        result += "using namespace tensorflow;\r\n";
+
+        return result;
+    }
+
     string generateFuncHeader(DeviceType deviceType) {
         string text;
 
@@ -340,23 +363,32 @@ private:
         return text;
     }
 
+    string generateUsingDefs() {
+        string result = "";
+
+        result += "using CPUDevice = Eigen::ThreadPoolDevice;\r\n";
+        result += "using GPUDevice = Eigen::GpuDevice;\r\n";
+
+        return result;
+    }
+
     string generateFuncImplementationCPU() {
         string text;
 
         text += generateFuncHeader(DeviceTypeCPU) + " {\r\n";
 
 
-        for(unsigned int i = 0; i < tArguments.size(); i++) {
-            text += tArguments[i]->generateCopyInToOutLines();
-        }
+//        for(unsigned int i = 0; i < tArguments.size(); i++) {
+//            text += tArguments[i]->generateCopyInToOutLines();
+//        }
 
 
-        text += "\tfor(int i_b = 0; i_b < dimSize.batches; i_b++) {\r\n";
-        for(unsigned int i = 0; i < tArguments.size(); i++) {
-            text += "\t\t" + tArguments[i]->generateVariableLine("i_b");
-        }
+//        text += "\tfor(int i_b = 0; i_b < dimSize.batches; i_b++) {\r\n";
+//        for(unsigned int i = 0; i < tArguments.size(); i++) {
+//            text += "\t\t" + tArguments[i]->generateVariableLine("i_b");
+//        }
 
-        text += "\t}\r\n";
+//        text += "\t}\r\n";
 
 
 
@@ -432,7 +464,7 @@ private:
     }
 
 public:
-    TensorProcessor(const Block& block, const std::string& code, Sink& sink, std::vector<Instantiation>& inst) {
+    TensorProcessor(const Block& block, const std::string& code, Sink& sink) {
         funcName = block.func.name;
 
         argumentWithHighestDims = 0;
@@ -463,37 +495,81 @@ public:
         filename = sink.getFilename() + "wat";
     }
 
+    string generateString() {
+        std::stringstream ss;
+
+        ss << endl;
+        ss << endl;
+
+        ss << "} // namespace" << endl;
+
+        ss << endl;
+        ss << endl;
+
+        ss << "// -------------------------- TENSORFLOW OP ------------------------- " << endl;
+
+        ss << endl;
+
+        ss << generateIncludesEtc();
+
+        ss << endl;
+
+        ss << generateHeader();
+
+        ss << std::endl;
+
+        ss << generateRegisterOP();
+
+        ss << endl;
+        ss << endl;
+
+        ss << generateUsingDefs();
+
+        ss << std::endl;
+        ss << std::endl;
+
+        ss << generateFuncImplementationCPU();
+
+        ss << std::endl;
+        ss << std::endl;
+
+        ss << generateFuncOP();
+
+        ss << std::endl;
+        ss << std::endl;
+
+        ss << generateRegisterKernelCPU();
+
+//        ss << std::endl;
+//        ss << std::endl;
+
+//        ss << generateRegisterKernelGPU();
+
+        ss << endl;
+
+
+        ss << "// ------------------------------------------------------------------ " << endl;
+
+        ss << endl;
+        ss << endl;
+
+
+        ss << "namespace manta {" << endl;
+
+
+        return ss.str();
+    }
 
     void write() {
         std::ofstream outfile (filename.c_str());
 
-        outfile << generateHeader();
-
-        outfile << std::endl;
-
-        outfile << generateRegisterOP();
-
-        outfile << std::endl;
-        outfile << std::endl;
-
-        outfile << generateFuncImplementationCPU();
-
-        outfile << std::endl;
-        outfile << std::endl;
-
-        outfile << generateFuncOP();
-
-        outfile << std::endl;
-        outfile << std::endl;
-
-        outfile << generateRegisterKernelCPU();
-
-//        outfile << std::endl;
-//        outfile << std::endl;
-
-//        outfile << generateRegisterKernelGPU();
+        outfile << generateString();
 
         outfile.close();
+    }
+
+    string getOpName() {
+        return FuncName();
     }
 
     ~TensorProcessor() {
@@ -503,7 +579,10 @@ public:
     }
 };
 
-void processTensorFunction(const Block& block, const std::string& code, Sink& sink, std::vector<Instantiation>& inst) {
-    TensorProcessor tensorProcessor = TensorProcessor(block, code, sink, inst);
-    tensorProcessor.write();
+void processTensorFunction(const Block& block, const string& code, Sink& sink) {
+    TensorProcessor tensorProcessor = TensorProcessor(block, code, sink);
+    sink.link << tensorProcessor.getOpName() << endl;
+    sink.inplace << tensorProcessor.generateString();
+
+    //tensorProcessor.write();
 }

@@ -19,6 +19,9 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
+
+#include "fileio.h"
 #include "prep.h"
 
 using namespace std;
@@ -34,7 +37,8 @@ void usage() {
 	cerr << "preprocessor error: Unknown parameters." << endl;
 	cerr << "  Usage : prep generate <dbg_mode> <mt_type> <inputdir> <inputfile> <outputfile>" << endl;
 	cerr << "     or : prep docgen <dbg_mode> <mt_type> <inputdir> <inputfile> <outputfile>" << endl;
-	cerr << "     or : prep link <regfiles...>" << endl;
+        cerr << "     or : prep link <regfiles...>" << endl;
+        cerr << "     or : prep build <cpuinputdir> <gpuinputdir> <outputfile>" << endl;
 	exit(1);
 }
 
@@ -73,25 +77,25 @@ void doGenerate(int argc, char* argv[], bool docs) {
 	Sink sink(infile,outfile);
 	if (gDocMode) {
 		sink.inplace << "/*! \\file " + infile + " */\n";
-	} else {
+        } else {
 		sink.inplace << "\n\n\n\n\n// DO NOT EDIT !\n";
 		sink.inplace << "// This file is generated using the MantaFlow preprocessor (prep generate).";
 		sink.inplace << "\n\n\n\n\n";
 	}
 	
-	if (isPython) {
-		// python file, only registering
-		replaceAll(text, "\n", "\\n");
-		replaceAll(text, "\r", "");
-		replaceAll(text, "\t", "\\t");
-		replaceAll(text, "\"", "<qtm>"); // split into two ops to avoid interference
-		replaceAll(text, "<qtm>", "\\\"");
-		sink.link << "#include \"registry.h\"\n";
-		sink.link << "static const Pb::Register _reg(\"" + infile + "\", \"" + text + "\");\n";
-	} else {
-		if (!gDocMode) {
+        if (isPython && gMTType != MTTensor) {
+                // python file, only registering
+                replaceAll(text, "\n", "\\n");
+                replaceAll(text, "\r", "");
+                replaceAll(text, "\t", "\\t");
+                replaceAll(text, "\"", "<qtm>"); // split into two ops to avoid interference
+                replaceAll(text, "<qtm>", "\\\"");
+                sink.link << "#include \"registry.h\"\n";
+                sink.link << "static const Pb::Register _reg(\"" + infile + "\", \"" + text + "\");\n";
+        } else {
+                if (!gDocMode && gMTType != MTTensor) {
 			sink.link << "#include \"" + infile + "\"\n";
-			if (!gDebugMode)
+                        if (!gDebugMode)
 				sink.inplace << "#line 1 \"" << indir << infile << "\"\n";
 		}
 		std::vector<Instantiation> inst;
@@ -143,6 +147,122 @@ void doRegister(int argc, char* argv[]) {
 	output.close();
 }
 
+bool isNotCFile (const File& file) {
+    return file.getExtension().compare("h") && file.getExtension().compare("cpp") ;
+}
+
+bool isNotBuildFile (const File& file) {
+    return file.getExtension().compare("build");
+}
+
+std::vector<std::string> split_string(const std::string& str,
+                                      const std::string& delimiter)
+{
+    std::vector<std::string> strings;
+
+    std::string::size_type pos = 0;
+    std::string::size_type prev = 0;
+    while ((pos = str.find(delimiter, prev)) != std::string::npos)
+    {
+        strings.push_back(str.substr(prev, pos - prev));
+        prev = pos + delimiter.length();
+    }
+
+    // To get the last substring (or only, if delimiter is not found)
+    strings.push_back(str.substr(prev));
+
+    return strings;
+}
+
+void createTensorBuild(int argc, char* argv[]) {
+    if(argc!=5) {
+        usage();
+        exit(1);
+    }
+
+
+    File inCPUDir = File(argv[2]);
+    File outFile = File(argv[4]);
+    File outFileDir = outFile.toDirectory();
+
+    vector<File> inCPUFiles = inCPUDir.getFilesOfDirectory();
+    vector<File> inBuildFiles = inCPUFiles;
+
+
+    inCPUFiles.erase(std::remove_if(inCPUFiles.begin(), inCPUFiles.end(), isNotCFile), inCPUFiles.end());
+
+    stringstream cpuSourcesStream;
+    {
+        cpuSourcesStream << "\tsrcs = [";
+
+        for (size_t i = 0; i < inCPUFiles.size(); i++) {
+            File file = inCPUFiles[i];
+
+            cpuSourcesStream << "\"" << file.makeRelative(outFileDir).toString() << "\"";
+
+            if(i + 1 < inCPUFiles.size()) {
+                cpuSourcesStream << ", ";
+            }
+        }
+        cpuSourcesStream << "]," << endl;
+    }
+
+    inBuildFiles.erase(std::remove_if(inBuildFiles.begin(), inBuildFiles.end(), isNotBuildFile), inBuildFiles.end());
+    for (size_t i = 0; i < inBuildFiles.size(); i++) {
+        File file = inBuildFiles[i];
+
+        string buildFileContent = file.readFile();
+
+        cout << file.toString() << ": " << buildFileContent << endl;
+
+        vector<string> strings = split_string(buildFileContent, "\n");
+
+        for(size_t j = 0; j < strings.size(); j++) {
+            cout << "String: " << strings[i] << endl;
+        }
+    }
+
+    stringstream buildStream;
+
+    buildStream << "load(\"//tensorflow:tensorflow.bzl\", \"tf_custom_op_library\")" << endl << endl;
+
+
+    buildStream << "tf_custom_op_library(" << endl;
+    buildStream << "\tname = \"auto_buo.so\"," << endl;
+    buildStream << cpuSourcesStream.str();
+    buildStream << ")" << endl << endl;
+
+
+
+
+    string s = buildStream.str();
+    outFile.writeFile(s);
+
+
+
+//load("//tensorflow:tensorflow.bzl", "tf_custom_op_library")
+
+//tf_custom_op_library(
+//    name = "auto_buo.so",
+//    srcs = ["dim_size.h",
+
+//        "general.h", "grid.h", "manta.h", "vectorbase.h", "pclass.h", "fluidsolver.h", "vector4d.h", "interpol.h",
+//        "interpolHigh.h", "kernel.h", "commonkernels.h", "particle.h", "integrator.h", "randomstream.h", "grid4d.h", "gitinfo.h",
+//        "levelset.h", "fileio.h", "mesh.h", "fastmarch.h", "vortexsheet.h", "mcubes.h", "solvana.h", "shapes.h",
+//        "noisefield.h",
+
+//        "grid.cpp", "general.cpp", "vectorbase.cpp", "pclass.cpp", "fluidsolver.cpp", "vector4d.cpp",
+//        "kernel.cpp", "particle.cpp", "grid4d.cpp",
+//        "levelset.cpp", "fileio.cpp", "mesh.cpp", "fastmarch.cpp", "vortexsheet.cpp", "shapes.cpp",
+//        "noisefield.cpp",
+
+//        "extforces.cpp"],
+//)
+
+
+
+
+}
 
 int main(int argc, char* argv[]) {
 	// command line options
@@ -161,7 +281,9 @@ int main(int argc, char* argv[]) {
 		doMerge(argc, argv);
 	else if (!strcmp(argv[1], "register"))
 		doRegister(argc, argv);
-	else 
+        else if (!strcmp(argv[1], "build"))
+            createTensorBuild(argc, argv);
+        else
 		usage();
 	
 	return 0;

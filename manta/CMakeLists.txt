@@ -147,6 +147,7 @@ SET(SOURCES
 	source/preprocessor/codegen_python.cpp
 	source/preprocessor/codegen_kernel.cpp
 	source/preprocessor/codegen_tensor.cpp
+	source/preprocessor/fileio.cpp
 )
 add_executable(prep ${SOURCES})
 if (NOT WIN32)
@@ -535,6 +536,8 @@ IF(TENSORFLOW)
     
             configure_file(${it} "${CURPP}" COPYONLY)
     ENDFOREACH(it)
+
+    EXECUTE_PROCESS(COMMAND "./prep" "build" "${TENSORFLOW_OUT_CPU}/" "${TENSORFLOW_OUT_CPU}/" "${TENSORFLOW_OUT}/BUILD")
     
 else()
     FOREACH(it ${PP_SOURCES} ${PP_HEADERS})

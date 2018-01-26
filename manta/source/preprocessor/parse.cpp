@@ -350,9 +350,9 @@ void parseBlock(const BlockType blockType, const vector<Token>& tokens, const Cl
 					"malformed preprocessor keyword block. Expected 'PYTHON type funcname(args) [{}|;]'");
 				processPythonFunction(block, tk.cur().text, sink, inst);
 
-                                if(blockType == BlockTypeTPython) {
-                                    processTensorFunction(block, tk.cur().text, sink, inst);
-                                }
+//                                if(blockType == BlockTypeTPython) {
+//                                    processTensorFunction(block, tk.cur().text, sink, inst);
+//                                }
 			}
 		}
 

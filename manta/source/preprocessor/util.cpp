@@ -74,6 +74,13 @@ void Sink::write() {
         if (isHeader && !gDocMode && gMTType != MTTensor) {
 		writeFile(filename + ".reg", link.str());
 	}
+
+        if(gMTType == MTTensor) {
+            string linkStr = link.str();
+            if(linkStr.length() > 0) {
+                writeFile(filename + ".build", link.str());
+            }
+        }
 }
 
 vector<string> split(const string& text, char sep) {

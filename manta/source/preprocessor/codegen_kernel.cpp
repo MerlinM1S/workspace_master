@@ -509,10 +509,22 @@ void processKernel(const Block& block, const string& code, Sink& sink) {
 		string ompTempl = TmpRunOMP;
 		replaceAll(ompTempl, "$OMP_DIRECTIVE$", TmpOMPDirective);
 		replaceAll(templ, "$RUN$", ompTempl);
-	}
+        } else if (mtType == MTTensor) {
+                replaceAll(templ, "$RUN$", TmpRunSimple);
+        }
+
+
 
 	// synthesize code
 	sink.inplace << block.linebreaks() << replaceSet(templ, table);
+
+        if (mtType == MTTensor) {
+
+            if( block.func.name == "KnAddBuoyancy") {
+                cout << "Processing: " << block.func.name << endl;
+                processTensorFunction(block, code, sink);
+            }
+        }
 
 	// adjust lines after OMP block
 	if ( (mtType == MTOpenMP) && (!gDebugMode) )
