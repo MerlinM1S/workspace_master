@@ -43,6 +43,7 @@ struct Sink {
 
 	std::ostringstream inplace;
 	std::ostringstream link;
+	std::ostringstream buildInfo;
 	bool isHeader;
 	std::string infile;
         

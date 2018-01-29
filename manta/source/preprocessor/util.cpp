@@ -70,16 +70,15 @@ Sink::Sink(const string& infile, const string& outfile):
 }
 
 void Sink::write() {
-	writeFile(filename, inplace.str());
-        if (isHeader && !gDocMode && gMTType != MTTensor) {
-		writeFile(filename + ".reg", link.str());
-	}
+        writeFile(filename, inplace.str());
 
         if(gMTType == MTTensor) {
-            string linkStr = link.str();
-            if(linkStr.length() > 0) {
-                writeFile(filename + ".build", link.str());
+            string buildInfoStr = buildInfo.str();
+            if(buildInfoStr.length() > 0) {
+                writeFile(filename + ".build", buildInfoStr);
             }
+        } else if (isHeader && !gDocMode) {
+            writeFile(filename + ".reg", link.str());
         }
 }
 

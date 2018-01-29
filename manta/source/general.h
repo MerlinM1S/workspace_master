@@ -1,3 +1,14 @@
+
+
+
+
+
+// DO NOT EDIT !
+// This file is generated using the MantaFlow preprocessor (prep generate).
+
+
+
+
 /******************************************************************************
  *
  * MantaFlow fluid solver framework
@@ -72,7 +83,11 @@ inline bool _chklevel(int level=0) { return gDebugLevel >= level; }
 #else
 #   define DEBUG_ONLY(a)
 #endif
+#ifdef MANTATENSOR
+#define throwError(msg)      { ; }
+#else
 #define throwError(msg)      { std::ostringstream __s; __s << msg << std::endl << "Error raised in " << __FILE__ << ":" << __LINE__; throw Manta::Error(__s.str()); }
+#endif
 #define errMsg(msg)          throwError(msg);
 #define assertMsg(cond,msg)  if(!(cond)) throwError(msg)
 #define assertDeb(cond,msg)  DEBUG_ONLY( assertMsg(cond,msg) )
@@ -158,3 +173,5 @@ inline bool c_isnan(float c) {
 } // namespace
 
 #endif
+
+

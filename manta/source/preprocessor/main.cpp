@@ -83,7 +83,7 @@ void doGenerate(int argc, char* argv[], bool docs) {
 		sink.inplace << "\n\n\n\n\n";
 	}
 	
-        if (isPython && gMTType != MTTensor) {
+        if (isPython) {
                 // python file, only registering
                 replaceAll(text, "\n", "\\n");
                 replaceAll(text, "\r", "");
@@ -93,9 +93,9 @@ void doGenerate(int argc, char* argv[], bool docs) {
                 sink.link << "#include \"registry.h\"\n";
                 sink.link << "static const Pb::Register _reg(\"" + infile + "\", \"" + text + "\");\n";
         } else {
-                if (!gDocMode && gMTType != MTTensor) {
+                if (!gDocMode) {
 			sink.link << "#include \"" + infile + "\"\n";
-                        if (!gDebugMode)
+                        if (!gDebugMode && gMTType != MTTensor)
 				sink.inplace << "#line 1 \"" << indir << infile << "\"\n";
 		}
 		std::vector<Instantiation> inst;
@@ -169,7 +169,7 @@ std::vector<std::string> split_string(const std::string& str,
     }
 
     // To get the last substring (or only, if delimiter is not found)
-    strings.push_back(str.substr(prev));
+    //strings.push_back(str.substr(prev));
 
     return strings;
 }
@@ -207,30 +207,35 @@ void createTensorBuild(int argc, char* argv[]) {
         cpuSourcesStream << "]," << endl;
     }
 
-    inBuildFiles.erase(std::remove_if(inBuildFiles.begin(), inBuildFiles.end(), isNotBuildFile), inBuildFiles.end());
-    for (size_t i = 0; i < inBuildFiles.size(); i++) {
-        File file = inBuildFiles[i];
-
-        string buildFileContent = file.readFile();
-
-        cout << file.toString() << ": " << buildFileContent << endl;
-
-        vector<string> strings = split_string(buildFileContent, "\n");
-
-        for(size_t j = 0; j < strings.size(); j++) {
-            cout << "String: " << strings[i] << endl;
-        }
-    }
-
     stringstream buildStream;
 
     buildStream << "load(\"//tensorflow:tensorflow.bzl\", \"tf_custom_op_library\")" << endl << endl;
 
+//    inBuildFiles.erase(std::remove_if(inBuildFiles.begin(), inBuildFiles.end(), isNotBuildFile), inBuildFiles.end());
+//    for (size_t i = 0; i < inBuildFiles.size(); i++) {
+//        File file = inBuildFiles[i];
+
+//        string buildFileContent = file.readFile();
+
+//        cout << file.toString() << ": " << buildFileContent << endl;
+
+//        vector<string> strings = split_string(buildFileContent, "\n");
+
+//        for(size_t j = 0; j < strings.size(); j++) {
+//            buildStream << "tf_custom_op_library(" << endl;
+//            buildStream << "\tname = \"" << strings[i] << ".so\"," << endl;
+//            buildStream << cpuSourcesStream.str();
+//            buildStream << ")" << endl << endl;
+//        }
+//    }
 
     buildStream << "tf_custom_op_library(" << endl;
-    buildStream << "\tname = \"auto_buo.so\"," << endl;
+    buildStream << "\tname = \"mantatensor.so\"," << endl;
     buildStream << cpuSourcesStream.str();
     buildStream << ")" << endl << endl;
+
+
+
 
 
 

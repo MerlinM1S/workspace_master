@@ -133,6 +133,10 @@ MESSAGE(STATUS "Options - "
 MESSAGE(STATUS "Multithreading type : ${MT_TYPE}")
 MESSAGE(STATUS "")
 
+if(TENSORFLOW)
+	SET(GUI FALSE)
+endif()
+
 #******************************************************************************
 # Pre-processor
 
@@ -316,6 +320,27 @@ if (NOPYTHON)
 
 	add_definitions( -DNOPYTHON=1 )
 endif()
+
+set(TENSOR_INCLUDE
+	source/nopython/manta.h
+	source/nopython/pclass.cpp
+	source/nopython/pclass.h
+	source/util/integrator.h
+	source/util/interpol.h
+	source/util/interpolHigh.h
+	source/util/mcubes.h
+	source/util/quaternion.h
+	source/util/randomstream.h
+	source/util/rcmatrix.h
+	source/util/simpleimage.cpp
+	source/util/simpleimage.h
+	source/util/solvana.h
+	source/util/vectorbase.cpp
+	source/util/vectorbase.h
+	source/util/vector4d.cpp
+	source/util/vector4d.h
+	source/tensorflow/dim_size.h
+)
 
 # compile with numpy support?
 if(NUMPY)
@@ -524,20 +549,34 @@ IF(TENSORFLOW)
             get_filename_component(CURNAME ${it} NAME)
             set(CURPP "${TENSORFLOW_OUT_CPU}/${CURNAME}") 
             string(REPLACE "source/" "" INFILE ${it}) 
-            
-            set(OUTFILES "${CURPP}")
-            
-            EXECUTE_PROCESS(COMMAND "./prep" "generate" ${PP_PREPD} "TENSOR" "${CMAKE_CURRENT_SOURCE_DIR}/source/" "${INFILE}" "${CURPP}")
+
+            add_custom_command(OUTPUT ${CURPP}
+                                           COMMAND "./prep" "generate" ${PP_PREPD} "TENSOR" "${CMAKE_CURRENT_SOURCE_DIR}/source/" "${INFILE}" "${CURPP}"
+                                            DEPENDS prep
+                                            IMPLICIT_DEPENDS CXX ${it})
+            list(APPEND PREPPED_SOURCES ${CURPP})
     ENDFOREACH(it)
     
-    FOREACH(it ${NOPP_SOURCES} ${NOPP_HEADERS})
+    FOREACH(it ${TENSOR_INCLUDE} ${GITINFO})
             get_filename_component(CURNAME ${it} NAME)
             set(CURPP "${TENSORFLOW_OUT_CPU}/${CURNAME}") 
     
             configure_file(${it} "${CURPP}" COPYONLY)
     ENDFOREACH(it)
 
-    EXECUTE_PROCESS(COMMAND "./prep" "build" "${TENSORFLOW_OUT_CPU}/" "${TENSORFLOW_OUT_CPU}/" "${TENSORFLOW_OUT}/BUILD")
+
+	list(APPEND PREPPED_SOURCES ${GITINFO}) 
+
+	SET(BUILD_FILE "${TENSORFLOW_OUT}/BUILD")
+
+	add_custom_target(tensor_prep_run ALL
+		COMMAND "./prep" "build" "${TENSORFLOW_OUT_CPU}/" "${TENSORFLOW_OUT_CPU}/" "${BUILD_FILE}"
+		DEPENDS ${PREPPED_SOURCES}
+	)
+
+
+#bazel build --config opt //tensorflow/core/mantatensor:kn_add_buoyancy.so --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" --copt="-D MANTAVERSION='tensor'"
+
     
 else()
     FOREACH(it ${PP_SOURCES} ${PP_HEADERS})

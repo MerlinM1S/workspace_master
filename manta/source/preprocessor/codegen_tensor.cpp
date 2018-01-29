@@ -12,7 +12,12 @@
 
 using namespace std;
 
-class TType {
+
+enum TType {
+    TTypeMACGrid, TTypeFlagGrid, TTypeRealGrid, TTypeVec3, TTypeReal, TTypeFloat, TTypeInt
+};
+
+class TTypeOp {
 public:
     string cName;
     string name;            // type name
@@ -23,24 +28,111 @@ public:
 
     string pName;           // paramter type name
 
+    TType tType;
+
 
     bool isScalar() {
         return promisedDims == 0;
     }
 
-    TType() { }
+       TTypeOp() {}
 
-    TType(string _cName, string _name, string _hName, bool _isConst, int _promisedDims) : cName(_cName), name(_name), hName(_hName), isConst(_isConst), promisedDims(_promisedDims) {
+    TTypeOp(TType _tType) : tType(_tType) {
+        switch(tType) {
+        case TTypeMACGrid:
+            cName = "MACGrid";
+            name = "float";
+            hName = "float";
+            isConst = false;
+            promisedDims = 4;
+            break;
+        case TTypeFlagGrid:
+            cName = "FlagGrid";
+            name = "int";
+            hName = "int32";
+            isConst = false;
+            promisedDims = 4;
+            break;
+        case TTypeRealGrid:
+            cName = "Grid<float>";
+            name = "float";
+            hName = "float";
+            isConst = false;
+            promisedDims = 4;
+            break;
+        case TTypeVec3:
+            cName = "Vec3";
+            name = "float";
+            hName = "float";
+            isConst = true;
+            promisedDims = 2;
+            break;
+        case TTypeReal:
+        case TTypeFloat:
+            cName = "float";
+            name = "float";
+            hName = "float";
+            isConst = true;
+            promisedDims = 1;
+            break;
+        case TTypeInt:
+            cName = "int";
+            name = "int";
+            hName = "int32";
+            isConst = true;
+            promisedDims = 1;
+            break;
+        }
+
         pName = name;
         if(!isScalar())
             pName += "*";
+    }
+
+    TTypeOp(string _cName, string _name, string _hName, bool _isConst, int _promisedDims) : cName(_cName), name(_name), hName(_hName), isConst(_isConst), promisedDims(_promisedDims) {
+        pName = name;
+        if(!isScalar())
+            pName += "*";
+    }
+
+    virtual string makeVariable(string batch, string baseVariableName, bool constCast) {
+        switch(tType) {
+        case TTypeFlagGrid:
+            return "FlagGrid(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, i_b)", constCast) + ", true);\r\n";
+        case TTypeRealGrid:
+            return "Grid<float>(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, i_b)", constCast) + ", true);\r\n";
+        case TTypeMACGrid:
+            return "MACGrid(&fluidSolver, (Vec3*) (" + baseVariableName + " + dimSize.batchToIndex(5, " + batch + ")), true);\r\n";
+        case TTypeVec3:
+            return "Vec3(" +  baseVariableName + " + (3 * " + batch + "));\r\n";
+        default:
+            string result = "";
+            if(promisedDims == 1) {
+                result += "*";
+            } else {
+                result += cName;
+            }
+
+            result += "(" + baseVariableName + "[" + batch + "]);\r\n";
+
+            return result;
+        }
+    }
+
+private:
+    string AddConstCast(string arrayPointer, bool constCast) {
+        if(constCast) {
+            return "const_cast<" + pName + ">(" +  arrayPointer + ")";
+        } else {
+            return arrayPointer;
+        }
     }
 };
 
 class TArgument {
 public:
     const Argument* argument;
-    TType tType;
+    TTypeOp tType;
 
     int inIndex;
     int outIndex;
@@ -50,16 +142,14 @@ public:
         inIndex = -1;
         outIndex = -1;
 
-
-
-        std::map<std::string, TType> typeConverter;
-        typeConverter["MACGrid"]    = TType("MACGrid",  "float",  "float", false,   5);
-        typeConverter["FlagGrid"]   = TType("FlagGrid", "int",    "int32", false,   4);
-        typeConverter["Grid"]       = TType("Grid",     "float",  "float", false,   4);
-        typeConverter["Vec3"]       = TType("Vec3",     "float",  "float", true,    2);
-        typeConverter["Real"]       = TType("float",    "float",  "float", true,    1);
-        typeConverter["int"]        = TType("int",      "int",    "int32", true,    1);
-        typeConverter["float"]      = TType("float",    "float",  "float", true,    1);
+        std::map<std::string, TTypeOp> typeConverter;
+        typeConverter["MACGrid"]    = TTypeOp(TTypeMACGrid);
+        typeConverter["FlagGrid"]   = TTypeOp(TTypeFlagGrid);
+        typeConverter["Grid"]       = TTypeOp(TTypeRealGrid);
+        typeConverter["Vec3"]       = TTypeOp(TTypeVec3);
+        typeConverter["Real"]       = TTypeOp(TTypeReal);
+        typeConverter["float"]      = TTypeOp(TTypeFloat);
+        typeConverter["int"]        = TTypeOp(TTypeInt);
 
 
         if (typeConverter.find(argument->type.name) != typeConverter.end()) {
@@ -207,13 +297,12 @@ public:
 
         text +=  tType.cName + " " +  argument->name + " = ";
 
-        if(tType.promisedDims == 1) {
-            text += "*";
-        } else {
-            text += tType.cName;
+        if(outIndex >= 0) {
+            text += tType.makeVariable(batch, getOutputName(), false);
+        } else if (inIndex >= 0){
+            text += tType.makeVariable(batch, getInputName(), true);
         }
 
-        text += "(" + getOutputName() + "[" + batch + "]);\r\n";
 
         return text;
     }
@@ -284,6 +373,7 @@ private:
         result += "#include \"tensorflow/core/framework/op_kernel.h\"\r\n";
         result += "\r\n";
         result += "using namespace tensorflow;\r\n";
+        result += "using namespace Manta;\r\n";
 
         return result;
     }
@@ -377,18 +467,38 @@ private:
 
         text += generateFuncHeader(DeviceTypeCPU) + " {\r\n";
 
+        // Copy In to Out
+        for(unsigned int i = 0; i < tArguments.size(); i++) {
+            text += tArguments[i]->generateCopyInToOutLines();
+        }
 
-//        for(unsigned int i = 0; i < tArguments.size(); i++) {
-//            text += tArguments[i]->generateCopyInToOutLines();
-//        }
+        text += "\tFluidSolver fluidSolver = FluidSolver(Vec3i(dimSize.width, dimSize.height, dimSize.depth));\r\n\r\n";
 
 
-//        text += "\tfor(int i_b = 0; i_b < dimSize.batches; i_b++) {\r\n";
-//        for(unsigned int i = 0; i < tArguments.size(); i++) {
-//            text += "\t\t" + tArguments[i]->generateVariableLine("i_b");
-//        }
+        text += "\tfor(int i_b = 0; i_b < dimSize.batches; i_b++) {\r\n";
 
-//        text += "\t}\r\n";
+        // Transform In-types to Tensorflow-types
+        for(unsigned int i = 0; i < tArguments.size(); i++) {
+            text += "\t\t" + tArguments[i]->generateVariableLine("i_b");
+        }
+
+        text += "\r\n";
+
+        // Func Call
+        {
+            text += "\t\t" + funcName + "(";
+
+            for(unsigned int i = 0; i < tArguments.size(); i++) {
+                text += tArguments[i]->argument->name + ", ";
+            }
+            text = text.substr(0, text.size() - 2);            // Remove last ", "
+
+            text += ");\r\n";
+        }
+
+
+        text += "\t}\r\n\r\n";
+
 
 
 
@@ -569,7 +679,7 @@ public:
     }
 
     string getOpName() {
-        return FuncName();
+        return func_name();
     }
 
     ~TensorProcessor() {
@@ -581,7 +691,7 @@ public:
 
 void processTensorFunction(const Block& block, const string& code, Sink& sink) {
     TensorProcessor tensorProcessor = TensorProcessor(block, code, sink);
-    sink.link << tensorProcessor.getOpName() << endl;
+    sink.buildInfo << tensorProcessor.getOpName() << endl;
     sink.inplace << tensorProcessor.generateString();
 
     //tensorProcessor.write();

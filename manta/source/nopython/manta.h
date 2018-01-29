@@ -20,6 +20,8 @@
 #define returns(X) extern X;
 #define alias typedef
 
+#define NOPYTHON 1
+
 #include "general.h"
 #include "vectorbase.h"
 #include "pclass.h"

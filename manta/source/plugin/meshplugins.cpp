@@ -24,7 +24,6 @@
 #include "mesh.h"
 #include "kernel.h"
 #include "edgecollapse.h"
-#include <mesh.h>
 #include <stack>
 
 using namespace std;
