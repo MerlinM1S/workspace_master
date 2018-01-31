@@ -532,52 +532,59 @@ endif()
 
 
 IF(TENSORFLOW) 
-    set(TENSORFLOW_DIR CACHE PATH "//The directory containing Tensorflow source.")
-    
-    if(EXISTS "${TENSORFLOW_DIR}/tensorflow/core")
-        set(TENSORFLOW_OUT "${TENSORFLOW_DIR}/tensorflow/core/mantatensor")
-        set(TENSORFLOW_OUT_CPU "${TENSORFLOW_OUT}/MantaCPU")
-    else()
-	MESSAGE(SEND_ERROR "Could not find Tensorflow directory: ${TENSORFLOW_DIR}/tensorflow/core/")
-    endif()
-    
-    file(MAKE_DIRECTORY "${TENSORFLOW_OUT_CPU}")
-    
-    
-    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/source")
-    FOREACH(it ${PP_SOURCES} ${PP_HEADERS})
-            get_filename_component(CURNAME ${it} NAME)
-            set(CURPP "${TENSORFLOW_OUT_CPU}/${CURNAME}") 
-            string(REPLACE "source/" "" INFILE ${it}) 
+	set(TENSORFLOW_DIR CACHE PATH "//The directory containing Tensorflow source.")
 
-            add_custom_command(OUTPUT ${CURPP}
-                                           COMMAND "./prep" "generate" ${PP_PREPD} "TENSOR" "${CMAKE_CURRENT_SOURCE_DIR}/source/" "${INFILE}" "${CURPP}"
-                                            DEPENDS prep
-                                            IMPLICIT_DEPENDS CXX ${it})
-            list(APPEND PREPPED_SOURCES ${CURPP})
-    ENDFOREACH(it)
-    
-    FOREACH(it ${TENSOR_INCLUDE} ${GITINFO})
-            get_filename_component(CURNAME ${it} NAME)
-            set(CURPP "${TENSORFLOW_OUT_CPU}/${CURNAME}") 
-    
-            configure_file(${it} "${CURPP}" COPYONLY)
-    ENDFOREACH(it)
+	if(EXISTS "${TENSORFLOW_DIR}/tensorflow/core")
+		set(TENSORFLOW_OUT "${TENSORFLOW_DIR}/tensorflow/core/mantatensor")
+		set(TENSORFLOW_OUT_CPU "${TENSORFLOW_OUT}/MantaCPU")
+	else()
+		MESSAGE(SEND_ERROR "Could not find Tensorflow directory: ${TENSORFLOW_DIR}/tensorflow/core/")
+	endif()
+
+	file(MAKE_DIRECTORY "${TENSORFLOW_OUT_CPU}")
+
+
+	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/source")
+	FOREACH(it ${PP_SOURCES} ${PP_HEADERS})
+		get_filename_component(CURNAME ${it} NAME)
+		set(CURPP "${TENSORFLOW_OUT_CPU}/${CURNAME}") 
+		string(REPLACE "source/" "" INFILE ${it}) 
+
+		add_custom_command(OUTPUT ${CURPP}
+			   COMMAND "./prep" "generate" ${PP_PREPD} "TENSOR" "${CMAKE_CURRENT_SOURCE_DIR}/source/" "${INFILE}" "${CURPP}"
+			   DEPENDS prep
+			   IMPLICIT_DEPENDS CXX ${it})
+	    list(APPEND PREPPED_SOURCES ${CURPP})
+	ENDFOREACH(it)
+
+	FOREACH(it ${TENSOR_INCLUDE} ${GITINFO})
+		get_filename_component(CURNAME ${it} NAME)
+		set(CURPP "${TENSORFLOW_OUT_CPU}/${CURNAME}") 
+		configure_file(${it} "${CURPP}" COPYONLY)
+	ENDFOREACH(it)
 
 
 	list(APPEND PREPPED_SOURCES ${GITINFO}) 
 
 	SET(BUILD_FILE "${TENSORFLOW_OUT}/BUILD")
+	SET(BUILD_LIB "${TENSORFLOW_DIR}/bazel-bin/tensorflow/core/mantatensor/mantatensor.so")
 
-	add_custom_target(tensor_prep_run ALL
-		COMMAND "./prep" "build" "${TENSORFLOW_OUT_CPU}/" "${TENSORFLOW_OUT_CPU}/" "${BUILD_FILE}"
-		DEPENDS ${PREPPED_SOURCES}
-	)
+	if(TRUE)
+		add_custom_target(tensor_prep_run ALL
+			COMMAND "./prep" "build" "${TENSORFLOW_OUT_CPU}/" "${TENSORFLOW_OUT_GPU}/" "${BUILD_LIB}" "${TENSORFLOW_OUT}/"
+			DEPENDS ${PREPPED_SOURCES})
+	else()
+		add_custom_command(OUTPUT ${BUILD_FILE}
+			COMMAND "./prep" "build" "${TENSORFLOW_OUT_CPU}/" "${TENSORFLOW_OUT_GPU}/" "${BUILD_LIB}" "${TENSORFLOW_OUT}/"
+			DEPENDS ${PREPPED_SOURCES})
+		list(APPEND PREPPED_SOURCES ${CURPP})
 
+		add_custom_target(tensor_build_run ALL
+			COMMAND "bazel" "build" "--config" "opt" "//tensorflow/core/mantatensor:mantatensor.so" "--cxxopt=\"-D_GLIBCXX_USE_CXX11_ABI=0\"" "--copt=-D MANTATENSOR" "--copt=-D MANTAVERSION=1"
+			WORKING_DIRECTORY ${TENSORFLOW_OUT}
+			DEPENDS ${BUILD_FILE})
+	endif()
 
-#bazel build --config opt //tensorflow/core/mantatensor:kn_add_buoyancy.so --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" --copt="-D MANTAVERSION='tensor'"
-
-    
 else()
     FOREACH(it ${PP_SOURCES} ${PP_HEADERS})
             get_filename_component(CURPATH ${it} PATH)

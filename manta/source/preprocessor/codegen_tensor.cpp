@@ -14,7 +14,7 @@ using namespace std;
 
 
 enum TType {
-    TTypeMACGrid, TTypeFlagGrid, TTypeRealGrid, TTypeVec3, TTypeReal, TTypeFloat, TTypeInt
+    TTypeMACGrid, TTypeFlagGrid, TTypeRealGrid, TTypeVec3, TTypeReal, TTypeFloat, TTypeInt, TTypeBool
 };
 
 class TTypeOp {
@@ -44,7 +44,7 @@ public:
             name = "float";
             hName = "float";
             isConst = false;
-            promisedDims = 4;
+            promisedDims = 5;
             break;
         case TTypeFlagGrid:
             cName = "FlagGrid";
@@ -82,6 +82,13 @@ public:
             isConst = true;
             promisedDims = 1;
             break;
+        case TTypeBool:
+            cName = "bool";
+            name = "bool";
+            hName = "bool";
+            isConst = true;
+            promisedDims = 1;
+            break;
         }
 
         pName = name;
@@ -98,24 +105,15 @@ public:
     virtual string makeVariable(string batch, string baseVariableName, bool constCast) {
         switch(tType) {
         case TTypeFlagGrid:
-            return "FlagGrid(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, i_b)", constCast) + ", true);\r\n";
+            return "FlagGrid(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);\r\n";
         case TTypeRealGrid:
-            return "Grid<float>(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, i_b)", constCast) + ", true);\r\n";
+            return "Grid<float>(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);\r\n";
         case TTypeMACGrid:
-            return "MACGrid(&fluidSolver, (Vec3*) (" + baseVariableName + " + dimSize.batchToIndex(5, " + batch + ")), true);\r\n";
+            return "MACGrid(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) +  "), true);\r\n";
         case TTypeVec3:
             return "Vec3(" +  baseVariableName + " + (3 * " + batch + "));\r\n";
         default:
-            string result = "";
-            if(promisedDims == 1) {
-                result += "*";
-            } else {
-                result += cName;
-            }
-
-            result += "(" + baseVariableName + "[" + batch + "]);\r\n";
-
-            return result;
+            return baseVariableName + "[" + batch + "];\r\n";
         }
     }
 
@@ -150,6 +148,7 @@ public:
         typeConverter["Real"]       = TTypeOp(TTypeReal);
         typeConverter["float"]      = TTypeOp(TTypeFloat);
         typeConverter["int"]        = TTypeOp(TTypeInt);
+        typeConverter["bool"]        = TTypeOp(TTypeBool);
 
 
         if (typeConverter.find(argument->type.name) != typeConverter.end()) {
@@ -180,8 +179,8 @@ public:
     string generateDimSizeLines() {
         string text;
 
-        string dimNames[5] = {"batches", "width", "height", "depth", "dim"};
-        for(int i = 0; i < 5; i++) {
+        string dimNames[4] = {"batches", "depth", "height", "width"};
+        for(int i = 0; i < 4; i++) {
             text += "\t\tlong " + dimNames[i] + " = ";
 
             if(tType.promisedDims > i)
@@ -531,7 +530,7 @@ private:
 
         // DimSize
         text += argumentWithHighestDims->generateDimSizeLines();
-        text += "\t\tDimSize dimSize = DimSize(batches, width, depth, height, dim);\r\n";
+        text += "\t\tDimSize dimSize = DimSize(batches, depth, height, width);\r\n";    // TODO might be: batches, width, depth, height
         text += "\r\n";
 
         // Function call
@@ -580,11 +579,21 @@ public:
         argumentWithHighestDims = 0;
         int highestDims = -1;
 
+        for(int i = 0; i < block.func.templateTypes.size(); i++) {
+            cout << block.func.templateTypes[i].name << endl;
+        }
+
         {
             int inIndex = 0;
             int outIndex = 0;
             for(unsigned int i = 0; i < block.func.arguments.size(); i++) {
                 TArgument* argument = new TArgument(&(block.func.arguments[i]));
+
+
+
+                if(argument->argument->type.isTemplated()) {
+                    cout << argument->argument->name << "Type: " << argument->argument->type.templateTypes[0].name << endl;
+                }
 
                 argument->inIndex = inIndex;
                 inIndex++;

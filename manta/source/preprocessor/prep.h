@@ -22,7 +22,7 @@
 using namespace std;
 
 enum BlockType {
-    BlockTypeNone, BlockTypeKernel, BlockTypePython, BlockTypeTPython
+    BlockTypeNone, BlockTypeKernel, BlockTypePython, BlockTypeTKernel
 };
 
 // from main.cpp
@@ -60,7 +60,7 @@ inline const string ToString(BlockType blockType)
     {
         case BlockTypeKernel: return "KERNEL";
         case BlockTypePython: return "PYTHON";
-        case BlockTypeTPython: return "TENSOR PYTHON";
+        case BlockTypeTKernel: return "TENSOR KERNEL";
         default: return "[Unknown BlockType]";
     }
 }

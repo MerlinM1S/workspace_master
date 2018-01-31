@@ -291,6 +291,8 @@ void processPythonFunction(const Block& block, const string& code, Sink& sink, v
 		return;
 	}
 	sink.inplace << block.linebreaks() << func.signature() << block.initList << code;
+
+
 #	if NOPYTHON==1
 	return; 
 #	endif

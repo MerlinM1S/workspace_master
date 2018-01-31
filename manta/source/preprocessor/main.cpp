@@ -38,7 +38,7 @@ void usage() {
 	cerr << "  Usage : prep generate <dbg_mode> <mt_type> <inputdir> <inputfile> <outputfile>" << endl;
 	cerr << "     or : prep docgen <dbg_mode> <mt_type> <inputdir> <inputfile> <outputfile>" << endl;
         cerr << "     or : prep link <regfiles...>" << endl;
-        cerr << "     or : prep build <cpuinputdir> <gpuinputdir> <outputfile>" << endl;
+        cerr << "     or : prep build <cpuinputdir> <gpuinputdir> <libfile> <outputdir>" << endl;
 	exit(1);
 }
 
@@ -174,20 +174,39 @@ std::vector<std::string> split_string(const std::string& str,
     return strings;
 }
 
+vector<string> getCustomOpsNames(vector<File> inBuildFiles) {
+    inBuildFiles.erase(std::remove_if(inBuildFiles.begin(), inBuildFiles.end(), isNotBuildFile), inBuildFiles.end());
+
+    vector<string> result;
+    for (size_t i = 0; i < inBuildFiles.size(); i++) {
+        File file = inBuildFiles[i];
+
+        string buildFileContent = file.readFile();
+
+        vector<string> strings = split_string(buildFileContent, "\n");
+
+        result.insert( result.end(), strings.begin(), strings.end() );
+    }
+
+    return result;
+}
+
 void createTensorBuild(int argc, char* argv[]) {
-    if(argc!=5) {
+    if(argc != 6) {
         usage();
         exit(1);
     }
 
 
     File inCPUDir = File(argv[2]);
-    File outFile = File(argv[4]);
-    File outFileDir = outFile.toDirectory();
+    File libFile =  File(argv[4]);
+    File outFileDir =  File(argv[5]);
+    File outFileBUILD = outFileDir.changeFilename("BUILD");
+    File outFilePy = outFileDir.changeFilename("mantatensor.py");
 
     vector<File> inCPUFiles = inCPUDir.getFilesOfDirectory();
-    vector<File> inBuildFiles = inCPUFiles;
 
+    vector<string> customOpsNames = getCustomOpsNames(inCPUFiles);
 
     inCPUFiles.erase(std::remove_if(inCPUFiles.begin(), inCPUFiles.end(), isNotCFile), inCPUFiles.end());
 
@@ -210,64 +229,29 @@ void createTensorBuild(int argc, char* argv[]) {
     stringstream buildStream;
 
     buildStream << "load(\"//tensorflow:tensorflow.bzl\", \"tf_custom_op_library\")" << endl << endl;
-
-//    inBuildFiles.erase(std::remove_if(inBuildFiles.begin(), inBuildFiles.end(), isNotBuildFile), inBuildFiles.end());
-//    for (size_t i = 0; i < inBuildFiles.size(); i++) {
-//        File file = inBuildFiles[i];
-
-//        string buildFileContent = file.readFile();
-
-//        cout << file.toString() << ": " << buildFileContent << endl;
-
-//        vector<string> strings = split_string(buildFileContent, "\n");
-
-//        for(size_t j = 0; j < strings.size(); j++) {
-//            buildStream << "tf_custom_op_library(" << endl;
-//            buildStream << "\tname = \"" << strings[i] << ".so\"," << endl;
-//            buildStream << cpuSourcesStream.str();
-//            buildStream << ")" << endl << endl;
-//        }
-//    }
-
     buildStream << "tf_custom_op_library(" << endl;
     buildStream << "\tname = \"mantatensor.so\"," << endl;
     buildStream << cpuSourcesStream.str();
     buildStream << ")" << endl << endl;
 
+    string buildStr = buildStream.str();
+    outFileBUILD.writeFile(buildStr);
 
 
 
+    stringstream pyStream;
 
+    pyStream << "import tensorflow as tf" << endl << endl;
+    pyStream << "mantatensor_module = tf.load_op_library('" << libFile.toString() << "')" << endl;
+    for(size_t i; i < customOpsNames.size(); i++) {
+        pyStream <<"manta_" << customOpsNames[i] << " = mantatensor_module." << customOpsNames[i] << endl;
+    }
 
+    string pyStr = pyStream.str();
 
-    string s = buildStream.str();
-    outFile.writeFile(s);
-
-
-
-//load("//tensorflow:tensorflow.bzl", "tf_custom_op_library")
-
-//tf_custom_op_library(
-//    name = "auto_buo.so",
-//    srcs = ["dim_size.h",
-
-//        "general.h", "grid.h", "manta.h", "vectorbase.h", "pclass.h", "fluidsolver.h", "vector4d.h", "interpol.h",
-//        "interpolHigh.h", "kernel.h", "commonkernels.h", "particle.h", "integrator.h", "randomstream.h", "grid4d.h", "gitinfo.h",
-//        "levelset.h", "fileio.h", "mesh.h", "fastmarch.h", "vortexsheet.h", "mcubes.h", "solvana.h", "shapes.h",
-//        "noisefield.h",
-
-//        "grid.cpp", "general.cpp", "vectorbase.cpp", "pclass.cpp", "fluidsolver.cpp", "vector4d.cpp",
-//        "kernel.cpp", "particle.cpp", "grid4d.cpp",
-//        "levelset.cpp", "fileio.cpp", "mesh.cpp", "fastmarch.cpp", "vortexsheet.cpp", "shapes.cpp",
-//        "noisefield.cpp",
-
-//        "extforces.cpp"],
-//)
-
-
-
-
+    outFilePy.writeFile(pyStr);
 }
+
 
 int main(int argc, char* argv[]) {
 	// command line options

@@ -501,30 +501,31 @@ void processKernel(const Block& block, const string& code, Sink& sink) {
 
 	// generate kernel
 	string templ = doubleKernel ? TmpDoubleKernel : TmpSingleKernel;
-	if (mtType == MTNone)
-		replaceAll(templ, "$RUN$", TmpRunSimple);
-	else if (mtType == MTTBB)
-		replaceAll(templ, "$RUN$", TmpRunTBB);
-	else if (mtType == MTOpenMP) {
-		string ompTempl = TmpRunOMP;
-		replaceAll(ompTempl, "$OMP_DIRECTIVE$", TmpOMPDirective);
-		replaceAll(templ, "$RUN$", ompTempl);
-        } else if (mtType == MTTensor) {
-                replaceAll(templ, "$RUN$", TmpRunSimple);
+        switch(mtType) {
+        case MTNone:
+        case MTTensor:
+            replaceAll(templ, "$RUN$", TmpRunSimple);
+            break;
+        case MTTBB:
+            replaceAll(templ, "$RUN$", TmpRunTBB);
+            break;
+        case MTOpenMP:
+            string ompTempl = TmpRunOMP;
+            replaceAll(ompTempl, "$OMP_DIRECTIVE$", TmpOMPDirective);
+            replaceAll(templ, "$RUN$", ompTempl);
+            break;
         }
 
+
+//        if(block.func.name == "addBuoyancy" || block.func.name == "advectSemiLagrange" /*blockType == BlockTypeTPython*/) {
+//            cout << "Processing: " << block.func.name << endl;
+//            processTensorFunction(block, tk.cur().text, sink);
+//        }
 
 
 	// synthesize code
 	sink.inplace << block.linebreaks() << replaceSet(templ, table);
 
-        if (mtType == MTTensor) {
-
-            if( block.func.name == "KnAddBuoyancy") {
-                cout << "Processing: " << block.func.name << endl;
-                processTensorFunction(block, code, sink);
-            }
-        }
 
 	// adjust lines after OMP block
 	if ( (mtType == MTOpenMP) && (!gDebugMode) )

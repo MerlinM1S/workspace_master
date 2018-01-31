@@ -22,8 +22,8 @@ namespace Manta {
 
 
 //! Semi-Lagrange interpolation kernel
-KERNEL(bnd=1) template<class T> 
-void SemiLagrange (FlagGrid& flags, MACGrid& vel, Grid<T>& dst, Grid<T>& src, Real dt, bool isLevelset, int orderSpace) 
+TKERNEL(bnd=1) template<class T>
+void SemiLagrange (const FlagGrid& flags, const MACGrid& vel, Grid<T>& dst, const Grid<T>& src, Real dt, bool isLevelset, int orderSpace)
 {
 	// traceback position
 	Vec3 pos = Vec3(i+0.5f,j+0.5f,k+0.5f) - vel.getCentered(i,j,k) * dt;

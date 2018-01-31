@@ -9,9 +9,9 @@
     long depth; 
     long dim;
     
-    DimSize() : batches(-1), width(-1), height(-1), depth(-1), dim(-1) { }
+    DimSize(long _dim = 3) : batches(-1), width(-1), height(-1), depth(-1), dim(_dim) { }
     
-    DimSize(long _batches, long _width, long _height, long _depth, long _dim) : batches(_batches), width(_width), height(_height), depth(_depth), dim(_dim) { }
+    DimSize(long _batches, long _width, long _height, long _depth, long _dim = 3) : batches(_batches), width(_width), height(_height), depth(_depth), dim(_dim) { }
     
     long lengthOf(int dims) const {
         long result = 1;
