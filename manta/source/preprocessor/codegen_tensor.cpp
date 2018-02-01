@@ -5,6 +5,7 @@
 #include <map>
 #include <sstream>
 #include <algorithm>
+#include <vector>
 
 
 #define SSTR( x ) static_cast< std::ostringstream & >( \
@@ -13,8 +14,127 @@
 using namespace std;
 
 
+
+
+struct SimpleBlock {
+    Block block;
+    string tensorFuncName;
+    string mantaFuncName;
+
+    vector<string> newTypes;
+
+    SimpleBlock(Block _block) : block(_block) {
+        mantaFuncName = block.func.name;
+        if(block.func.isTemplated()) {
+            mantaFuncName += "<>";
+        }
+
+        tensorFuncName = block.func.name;
+    }
+
+    SimpleBlock(SimpleBlock sBlock, string nType) : block(sBlock.block) {
+        mantaFuncName = block.func.name;
+        tensorFuncName = block.func.name;
+
+        newTypes = sBlock.newTypes;
+        newTypes.push_back(nType);
+
+        if(!newTypes.empty()) {
+            mantaFuncName += "<";
+
+            for(size_t i = 0; i < newTypes.size(); i++) {
+                mantaFuncName += newTypes[i];
+                if(newTypes.size() > i + 1)
+                    mantaFuncName += ", ";
+
+
+                string NewType = newTypes[i];
+                NewType[i] = toupper(NewType[i]);
+                tensorFuncName += NewType;
+            }
+
+            mantaFuncName += ">";
+        }
+
+    }
+};
+
+
+vector<SimpleBlock> templatePreprocessor(const Block& block) {
+    vector<SimpleBlock> result;
+
+    result.push_back(block);
+
+    string dataTypes[] = {"int", "float", "Vec3"};
+
+    while(result[0].block.func.isTemplated()) {
+        SimpleBlock cSBlock = result[0];
+        Block* cBlock = &cSBlock.block;
+
+        result.erase (result.begin());
+
+        string removedTemplate = cBlock->func.templateTypes[0].name;
+        cBlock->func.templateTypes._data.erase(cBlock->func.templateTypes._data.begin());
+
+        for(size_t i = 0; i < 3; i++) {
+            string nType = dataTypes[i];
+
+            SimpleBlock nBlock = SimpleBlock(cSBlock, nType);
+
+            for(size_t j = 0; j < cBlock->func.arguments.size();  j++) {
+                Argument argument = cBlock->func.arguments[j];
+
+                List<Type> nTemplates;
+                for(size_t k = 0; k < argument.type.templateTypes.size(); k++) {
+                    Type cType = argument.type.templateTypes[k];
+
+                    if(removedTemplate.compare(cType.name) == 0) {
+                        cType.name = nType;
+                    }
+
+                    nTemplates.push_back(cType);
+                }
+                argument.type.templateTypes = nTemplates;
+
+//                replace_if(templates.begin(), templates.end(), removedTemplate, nType);
+
+                nBlock.block.func.arguments[j] = argument;
+            }
+
+            result.push_back(nBlock);
+        }
+    }
+
+    for(size_t i = 0; i < result.size(); i++) {
+        cout << result[i].mantaFuncName << "/ " << result[i].tensorFuncName << ": ";
+
+        for(size_t j = 0; j < result[i].block.func.arguments.size();  j++) {
+
+            cout << result[i].block.func.arguments[j].type.name;
+
+
+            if(result[i].block.func.arguments[j].type.isTemplated()) {
+                cout << "<";
+                for(size_t k = 0; k < result[i].block.func.arguments[j].type.templateTypes.size(); k++) {
+                    cout << result[i].block.func.arguments[j].type.templateTypes[k].name;
+                }
+                cout << ">";
+            }
+
+
+            cout << ", ";
+        }
+        cout << endl;
+    }
+
+
+    return result;
+}
+
+
+
 enum TType {
-    TTypeMACGrid, TTypeFlagGrid, TTypeRealGrid, TTypeVec3, TTypeReal, TTypeFloat, TTypeInt, TTypeBool
+    TTypeMACGrid, TTypeFlagGrid, TTypeGridFloat, TTypeGridInt, TTypeGridVec3, TTypeVec3, TTypeFloat, TTypeInt, TTypeBool
 };
 
 class TTypeOp {
@@ -46,6 +166,13 @@ public:
             isConst = false;
             promisedDims = 5;
             break;
+        case TTypeGridVec3:
+            cName = "Grid<Vec3>";
+            name = "float";
+            hName = "float";
+            isConst = false;
+            promisedDims = 5;
+            break;
         case TTypeFlagGrid:
             cName = "FlagGrid";
             name = "int";
@@ -53,10 +180,17 @@ public:
             isConst = false;
             promisedDims = 4;
             break;
-        case TTypeRealGrid:
+        case TTypeGridFloat:
             cName = "Grid<float>";
             name = "float";
             hName = "float";
+            isConst = false;
+            promisedDims = 4;
+            break;
+        case TTypeGridInt:
+            cName = "Grid<int>";
+            name = "int";
+            hName = "int32";
             isConst = false;
             promisedDims = 4;
             break;
@@ -67,7 +201,6 @@ public:
             isConst = true;
             promisedDims = 2;
             break;
-        case TTypeReal:
         case TTypeFloat:
             cName = "float";
             name = "float";
@@ -102,14 +235,15 @@ public:
             pName += "*";
     }
 
-    virtual string makeVariable(string batch, string baseVariableName, bool constCast) {
+    string makeVariable(string batch, string baseVariableName, bool constCast) {
         switch(tType) {
+        case TTypeGridInt:
+        case TTypeGridFloat:
         case TTypeFlagGrid:
-            return "FlagGrid(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);\r\n";
-        case TTypeRealGrid:
-            return "Grid<float>(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);\r\n";
+            return cName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);\r\n";
+        case TTypeGridVec3:
         case TTypeMACGrid:
-            return "MACGrid(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) +  "), true);\r\n";
+            return cName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) +  "), true);\r\n";
         case TTypeVec3:
             return "Vec3(" +  baseVariableName + " + (3 * " + batch + "));\r\n";
         default:
@@ -143,16 +277,18 @@ public:
         std::map<std::string, TTypeOp> typeConverter;
         typeConverter["MACGrid"]    = TTypeOp(TTypeMACGrid);
         typeConverter["FlagGrid"]   = TTypeOp(TTypeFlagGrid);
-        typeConverter["Grid"]       = TTypeOp(TTypeRealGrid);
+        typeConverter["Grid<float>"]= TTypeOp(TTypeGridFloat);
+        typeConverter["Grid<Real>"] = TTypeOp(TTypeGridFloat);
+        typeConverter["Grid<int>"]  = TTypeOp(TTypeGridInt);
+        typeConverter["Grid<Vec3>"] = TTypeOp(TTypeGridVec3);
         typeConverter["Vec3"]       = TTypeOp(TTypeVec3);
-        typeConverter["Real"]       = TTypeOp(TTypeReal);
+        typeConverter["Real"]       = TTypeOp(TTypeFloat);
         typeConverter["float"]      = TTypeOp(TTypeFloat);
         typeConverter["int"]        = TTypeOp(TTypeInt);
-        typeConverter["bool"]        = TTypeOp(TTypeBool);
+        typeConverter["bool"]       = TTypeOp(TTypeBool);
 
-
-        if (typeConverter.find(argument->type.name) != typeConverter.end()) {
-            tType = typeConverter[argument->type.name];
+        if (typeConverter.find(argument->type.toString()) != typeConverter.end()) {
+            tType = typeConverter[argument->type.toString()];
         }
     }
 
@@ -327,29 +463,30 @@ string convertToSnake_case(string camelCase) {
 }
 class TensorProcessor {
 private:
-    string funcName;
+    string tensorFuncName;
+    string mantaFuncName;
     string filename;
 
     List<TArgument*> tArguments;
 
     TArgument* argumentWithHighestDims;
 
-    string func_name() {
-        return convertToSnake_case(funcName);
+    string tensor_func_name() {
+        return convertToSnake_case(tensorFuncName);
     }
 
-    string FuncName() {
-        string result = funcName;
+    string TensorFuncName() {
+        string result = tensorFuncName;
         result[0] = toupper(result[0]);
         return result;
     }
 
-    string funcName_Functor() {
-        return funcName + "_Functor";
+    string tensorFuncName_Functor() {
+        return tensorFuncName + "_Functor";
     }
 
-    string funcName_OP() {
-        return funcName + "_OP";
+    string tensorFuncName_OP() {
+        return tensorFuncName + "_OP";
     }
 
     enum DeviceType {
@@ -398,18 +535,18 @@ private:
         switch(deviceType) {
         case DeviceTypeGeneral:
             text += "template <typename Device>\r\n";
-            text += "struct " + funcName_Functor() + " {\r\n";
+            text += "struct " + tensorFuncName_Functor() + " {\r\n";
             text += "\tvoid operator()(const Device& d, ";
             break;
         case DeviceTypeCPU:
         case DeviceTypeGPU:
             text += "template <>\r\n";
-            text += "void " + funcName_Functor() + "<" + deviceName + ">::operator()(const " + deviceName + "& d, ";
+            text += "void " + tensorFuncName_Functor() + "<" + deviceName + ">::operator()(const " + deviceName + "& d, ";
             break;
         }
 
         text += "const DimSize dimSize, ";
-        for(unsigned int i = 0; i < tArguments.size(); i++) {
+        for(size_t i = 0; i < tArguments.size(); i++) {
             text += tArguments[i]->generateHeaderParam();
         }
         text = text.substr(0, text.size() - 2);            // Remove last ", "
@@ -430,19 +567,19 @@ private:
     string generateRegisterOP() {
         string text;
 
-        text += "REGISTER_OP(\"" + FuncName() + "\")\r\n";
+        text += "REGISTER_OP(\"" + TensorFuncName() + "\")\r\n";
 
-        for(unsigned int i = 0; i < tArguments.size(); i++) {
+        for(size_t i = 0; i < tArguments.size(); i++) {
             text += tArguments[i]->generateInputLine();
         }
 
-        for(unsigned int i = 0; i < tArguments.size(); i++) {
+        for(size_t i = 0; i < tArguments.size(); i++) {
             text += tArguments[i]->generateOutputLine();
         }
 
         {
             text += "\t.SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {\r\n";
-            for(unsigned int i = 0; i < tArguments.size(); i++) {
+            for(size_t i = 0; i < tArguments.size(); i++) {
                 text += tArguments[i]->generateShapeInferenceLine();
             }
             text += "\t\treturn Status::OK();\r\n";
@@ -467,7 +604,7 @@ private:
         text += generateFuncHeader(DeviceTypeCPU) + " {\r\n";
 
         // Copy In to Out
-        for(unsigned int i = 0; i < tArguments.size(); i++) {
+        for(size_t i = 0; i < tArguments.size(); i++) {
             text += tArguments[i]->generateCopyInToOutLines();
         }
 
@@ -477,7 +614,7 @@ private:
         text += "\tfor(int i_b = 0; i_b < dimSize.batches; i_b++) {\r\n";
 
         // Transform In-types to Tensorflow-types
-        for(unsigned int i = 0; i < tArguments.size(); i++) {
+        for(size_t i = 0; i < tArguments.size(); i++) {
             text += "\t\t" + tArguments[i]->generateVariableLine("i_b");
         }
 
@@ -485,9 +622,9 @@ private:
 
         // Func Call
         {
-            text += "\t\t" + funcName + "(";
+            text += "\t\t" + mantaFuncName + "(";
 
-            for(unsigned int i = 0; i < tArguments.size(); i++) {
+            for(size_t i = 0; i < tArguments.size(); i++) {
                 text += tArguments[i]->argument->name + ", ";
             }
             text = text.substr(0, text.size() - 2);            // Remove last ", "
@@ -511,19 +648,19 @@ private:
         string text;
 
         text += "template <typename Device>\r\n";
-        text += "class " + funcName_OP() + " : public OpKernel {\r\n";
+        text += "class " + tensorFuncName_OP() + " : public OpKernel {\r\n";
         text += "public:\r\n";
-        text += "\texplicit " + funcName_OP() +"(OpKernelConstruction* context) : OpKernel(context) {}\r\n";
+        text += "\texplicit " + tensorFuncName_OP() +"(OpKernelConstruction* context) : OpKernel(context) {}\r\n";
         text += "\r\n";
         text += "\tvoid Compute(OpKernelContext* context) override {\r\n";
 
         // InTensor
-        for(unsigned int i = 0; i < tArguments.size(); i++) {
+        for(size_t i = 0; i < tArguments.size(); i++) {
             text += tArguments[i]->generateInTensorLines();
         }
 
         // OutTensor
-        for(unsigned int i = 0; i < tArguments.size(); i++) {
+        for(size_t i = 0; i < tArguments.size(); i++) {
             text += tArguments[i]->generateOutTensorLines();
         }
 
@@ -536,12 +673,12 @@ private:
         // Function call
         {
             string funcCall;
-            funcCall += "\t\t" + funcName_Functor() + "<Device>()(\r\n";
+            funcCall += "\t\t" + tensorFuncName_Functor() + "<Device>()(\r\n";
             funcCall += "\t\t\tcontext->eigen_device<Device>(), \r\n";
             funcCall += "\t\t\tdimSize, \r\n";
 
             funcCall += "\t\t\t";
-            for(unsigned int i = 0; i < tArguments.size(); i++) {
+            for(size_t i = 0; i < tArguments.size(); i++) {
                 funcCall += tArguments[i]->generateParam();
             }
             funcCall = funcCall.substr(0, funcCall.size() - 2);            // Remove last ", "
@@ -557,7 +694,7 @@ private:
     }
 
     string generateRegisterKernelCPU() {
-        return "REGISTER_KERNEL_BUILDER(Name(\"" + FuncName() + "\").Device(DEVICE_CPU), " + funcName_OP() + "<CPUDevice>);\r\n";
+        return "REGISTER_KERNEL_BUILDER(Name(\"" + TensorFuncName() + "\").Device(DEVICE_CPU), " + tensorFuncName_OP() + "<CPUDevice>);\r\n";
     }
 
     string generateRegisterKernelGPU() {
@@ -565,7 +702,7 @@ private:
 
         text += "#if GOOGLE_CUDA\r\n";
         text += "\r\n";
-        text += "REGISTER_KERNEL_BUILDER(Name(\"" + FuncName() + "\").Device(DEVICE_GPU), " + funcName_OP() + "<GPUDevice>);\r\n";
+        text += "REGISTER_KERNEL_BUILDER(Name(\"" + TensorFuncName() + "\").Device(DEVICE_GPU), " + tensorFuncName_OP() + "<GPUDevice>);\r\n";
         text += "\r\n";
         text += "#endif\r\n";
 
@@ -573,27 +710,19 @@ private:
     }
 
 public:
-    TensorProcessor(const Block& block, const std::string& code, Sink& sink) {
-        funcName = block.func.name;
+    TensorProcessor(const SimpleBlock& sBlock, const std::string& code, Sink& sink) {
+        const Block* block = &sBlock.block;
+        tensorFuncName = sBlock.tensorFuncName;
+        mantaFuncName = sBlock.mantaFuncName;
 
         argumentWithHighestDims = 0;
         int highestDims = -1;
 
-        for(int i = 0; i < block.func.templateTypes.size(); i++) {
-            cout << block.func.templateTypes[i].name << endl;
-        }
-
         {
             int inIndex = 0;
             int outIndex = 0;
-            for(unsigned int i = 0; i < block.func.arguments.size(); i++) {
-                TArgument* argument = new TArgument(&(block.func.arguments[i]));
-
-
-
-                if(argument->argument->type.isTemplated()) {
-                    cout << argument->argument->name << "Type: " << argument->argument->type.templateTypes[0].name << endl;
-                }
+            for(unsigned int i = 0; i < block->func.arguments.size(); i++) {
+                TArgument* argument = new TArgument(&(block->func.arguments[i]));
 
                 argument->inIndex = inIndex;
                 inIndex++;
@@ -688,20 +817,27 @@ public:
     }
 
     string getOpName() {
-        return func_name();
+        return tensor_func_name();
     }
 
     ~TensorProcessor() {
-        for(unsigned int i = 0; i < tArguments.size(); i++) {
+        for(size_t i = 0; i < tArguments.size(); i++) {
             delete (tArguments[i]);
         }
     }
 };
 
+
 void processTensorFunction(const Block& block, const string& code, Sink& sink) {
-    TensorProcessor tensorProcessor = TensorProcessor(block, code, sink);
-    sink.buildInfo << tensorProcessor.getOpName() << endl;
-    sink.inplace << tensorProcessor.generateString();
+    vector<SimpleBlock> simpleBlocks = templatePreprocessor(block);
+
+    for(size_t i = 0; i < simpleBlocks.size(); i++) {
+        TensorProcessor tensorProcessor = TensorProcessor(simpleBlocks[i], code, sink);
+        sink.buildInfo << tensorProcessor.getOpName() << endl;
+        sink.inplace << tensorProcessor.generateString();
+    }
+
+
 
     //tensorProcessor.write();
 }

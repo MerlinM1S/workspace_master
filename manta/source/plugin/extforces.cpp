@@ -60,7 +60,7 @@ PYTHON() void addGravityNoScale(FlagGrid& flags, MACGrid& vel, const Vec3& gravi
 }
 
 //! kernel to add Buoyancy force 
-KERNEL(bnd=1) void KnAddBuoyancy(const FlagGrid& flags, const Grid<Real>& factor, MACGrid& vel, Vec3 strength) {
+TKERNEL(bnd=1) void KnAddBuoyancy(const FlagGrid& flags, const Grid<Real>& factor, MACGrid& vel, Vec3 strength) {
 	if (!flags.isFluid(i,j,k)) return;
 	if (flags.isFluid(i-1,j,k))
 		vel(i,j,k).x += (0.5 * strength.x) * (factor(i,j,k)+factor(i-1,j,k));

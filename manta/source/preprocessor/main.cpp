@@ -243,7 +243,7 @@ void createTensorBuild(int argc, char* argv[]) {
 
     pyStream << "import tensorflow as tf" << endl << endl;
     pyStream << "mantatensor_module = tf.load_op_library('" << libFile.toString() << "')" << endl;
-    for(size_t i; i < customOpsNames.size(); i++) {
+    for(size_t i = 0; i < customOpsNames.size(); i++) {
         pyStream <<"manta_" << customOpsNames[i] << " = mantatensor_module." << customOpsNames[i] << endl;
     }
 
