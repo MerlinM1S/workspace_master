@@ -284,11 +284,11 @@ void parseBlock(const BlockType blockType, const vector<Token>& tokens, const Cl
 		processKernel(block, tk.cur().text, sink);
 
                 if(blockType == BlockTypeTKernel) {
-                    cout << "Processing: " << block.func.name << endl;
+                    cout << "Processing kernel: " << block.func.name << endl;
                     processTensorFunction(block, tk.cur().text, sink);
                 }
 	}
-        else if (blockType == BlockTypePython)
+        else if (blockType == BlockTypePython || blockType == BlockTypeTPython)
 	{
 		// template instantiation / alias
 		if (tk.curType() == TkDescriptor && (tk.cur().text == "alias" || tk.cur().text == "instantiate"))  {
@@ -354,6 +354,11 @@ void parseBlock(const BlockType blockType, const vector<Token>& tokens, const Cl
 				tkAssert((tk.curType() == TkCodeBlock || tk.curType() == TkSemicolon) && tk.isLast(), 
 					"malformed preprocessor keyword block. Expected 'PYTHON type funcname(args) [{}|;]'");
 				processPythonFunction(block, tk.cur().text, sink, inst);
+
+                                if(blockType == BlockTypeTPython) {
+                                    cout << "Processing python: " << block.func.name << endl;
+                                    processTensorFunction(block, tk.cur().text, sink);
+                                }
 			}
 		}
 

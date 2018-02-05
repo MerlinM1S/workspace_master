@@ -15,6 +15,35 @@ using namespace std;
 
 
 
+void stringReplace(string& source, string const& find, string const& replace)
+{
+    for(string::size_type i = 0; (i = source.find(find, i)) != string::npos;)
+    {
+        source.replace(i, find.length(), replace);
+        i += replace.length();
+    }
+}
+
+
+string convertToSnake_case(string camelCase) {
+    std::string str(1, tolower(camelCase[0]));
+
+    // First place underscores between contiguous lower and upper case letters.
+    // For example, `_LowerCamelCase` becomes `_Lower_Camel_Case`.
+    for (string::iterator it = camelCase.begin() + 1; it != camelCase.end(); ++it) {
+      if (isupper(*it) && *(it-1) != '_' && (islower(*(it-1)) || islower(*(it+1)))) {
+        str += "_";
+      }
+      str += *it;
+    }
+
+    // Then convert it to lower case.
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+
+    return str;
+}
+
+
 
 struct SimpleBlock {
     Block block;
@@ -49,13 +78,23 @@ struct SimpleBlock {
 
 
                 string NewType = newTypes[i];
-                NewType[i] = toupper(NewType[i]);
+                NewType[0] = toupper(NewType[0]);
                 tensorFuncName += NewType;
             }
 
             mantaFuncName += ">";
         }
+    }
 
+    SimpleBlock(SimpleBlock sBlock, Type& nType) : block(sBlock.block) {
+        mantaFuncName = sBlock.mantaFuncName;
+        tensorFuncName = sBlock.tensorFuncName;
+
+        string NewType = nType.toString();          // TODO replace ... not correct
+        stringReplace(NewType, "<", "");
+        stringReplace(NewType, ">", "");
+        NewType[0] = toupper(NewType[0]);
+        tensorFuncName += NewType;
     }
 };
 
@@ -63,7 +102,7 @@ struct SimpleBlock {
 vector<SimpleBlock> templatePreprocessor(const Block& block) {
     vector<SimpleBlock> result;
 
-    result.push_back(block);
+    result.push_back(SimpleBlock(block));
 
     string dataTypes[] = {"int", "float", "Vec3"};
 
@@ -105,27 +144,102 @@ vector<SimpleBlock> templatePreprocessor(const Block& block) {
         }
     }
 
-    for(size_t i = 0; i < result.size(); i++) {
-        cout << result[i].mantaFuncName << "/ " << result[i].tensorFuncName << ": ";
+    // Print
+//    for(size_t i = 0; i < result.size(); i++) {
+//        cout << result[i].mantaFuncName << "/ " << result[i].tensorFuncName << ": ";
 
-        for(size_t j = 0; j < result[i].block.func.arguments.size();  j++) {
+//        for(size_t j = 0; j < result[i].block.func.arguments.size();  j++) {
 
-            cout << result[i].block.func.arguments[j].type.name;
+//            cout << result[i].block.func.arguments[j].type.name;
 
 
-            if(result[i].block.func.arguments[j].type.isTemplated()) {
-                cout << "<";
-                for(size_t k = 0; k < result[i].block.func.arguments[j].type.templateTypes.size(); k++) {
-                    cout << result[i].block.func.arguments[j].type.templateTypes[k].name;
+//            if(result[i].block.func.arguments[j].type.isTemplated()) {
+//                cout << "<";
+//                for(size_t k = 0; k < result[i].block.func.arguments[j].type.templateTypes.size(); k++) {
+//                    cout << result[i].block.func.arguments[j].type.templateTypes[k].name;
+//                }
+//                cout << ">";
+//            }
+
+
+//            cout << ", ";
+//        }
+//        cout << endl;
+//    }
+
+
+    return result;
+}
+
+
+vector<SimpleBlock> replaceGridBase(const Block& block) {
+
+    Type dataTypes[3];
+    dataTypes[0].name = "MACGrid";
+    dataTypes[1].name = "Grid";
+    {
+        Type type;
+        type.name = "Vec3";
+        dataTypes[1].templateTypes.push_back(type);
+    }
+    dataTypes[2].name = "Grid";
+    {
+        Type type;
+        type.name = "float";
+        dataTypes[2].templateTypes.push_back(type);
+    }
+
+
+
+    vector<SimpleBlock> result;
+
+    result.push_back(SimpleBlock(block));
+
+    List<Argument> arguments = block.func.arguments;
+
+    for(size_t i = 0; i < arguments.size();  i++) {
+        if(arguments[i].type.name.compare("GridBase") == 0) {
+            vector<SimpleBlock> nResult;
+
+            for(int k = 0; k< 3; k++) {
+                Argument argument = arguments[i];
+                argument.type.name = dataTypes[k].name;
+                argument.type.templateTypes = dataTypes[k].templateTypes;
+                for(size_t j = 0; j < result.size();  j++) {
+                    SimpleBlock nBlock = SimpleBlock(result[j], argument.type);
+
+                    nBlock.block.func.arguments[i] = argument;
+
+                    nResult.push_back(nBlock);
                 }
-                cout << ">";
             }
 
-
-            cout << ", ";
+            result = nResult;
         }
-        cout << endl;
     }
+
+
+        for(size_t i = 0; i < result.size(); i++) {
+            cout << result[i].mantaFuncName << "/ " << result[i].tensorFuncName << ": ";
+
+            for(size_t j = 0; j < result[i].block.func.arguments.size();  j++) {
+
+                cout << result[i].block.func.arguments[j].type.name;
+
+
+                if(result[i].block.func.arguments[j].type.isTemplated()) {
+                    cout << "<";
+                    for(size_t k = 0; k < result[i].block.func.arguments[j].type.templateTypes.size(); k++) {
+                        cout << result[i].block.func.arguments[j].type.templateTypes[k].name;
+                    }
+                    cout << ">";
+                }
+
+
+                cout << ", ";
+            }
+            cout << endl;
+        }
 
 
     return result;
@@ -155,7 +269,7 @@ public:
         return promisedDims == 0;
     }
 
-       TTypeOp() {}
+    TTypeOp() {}
 
     TTypeOp(TType _tType) : tType(_tType) {
         switch(tType) {
@@ -297,11 +411,11 @@ public:
     }
 
     string getInputName() {
-        return "in_" + argument->name;
+        return "in_" + convertToSnake_case(argument->name);
     }
 
     string getOutputName() {
-        return "out_" + argument->name;
+        return "out_" + convertToSnake_case(argument->name);
     }
 
     string getInTensorName() {
@@ -444,23 +558,7 @@ public:
 
 };
 
-string convertToSnake_case(string camelCase) {
-    std::string str(1, tolower(camelCase[0]));
 
-    // First place underscores between contiguous lower and upper case letters.
-    // For example, `_LowerCamelCase` becomes `_Lower_Camel_Case`.
-    for (string::iterator it = camelCase.begin() + 1; it != camelCase.end(); ++it) {
-      if (isupper(*it) && *(it-1) != '_' && islower(*(it-1))) {
-        str += "_";
-      }
-      str += *it;
-    }
-
-    // Then convert it to lower case.
-    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
-
-    return str;
-}
 class TensorProcessor {
 private:
     string tensorFuncName;
@@ -625,6 +723,8 @@ private:
             text += "\t\t" + mantaFuncName + "(";
 
             for(size_t i = 0; i < tArguments.size(); i++) {
+                if(tArguments[i]->argument->type.isPointer)
+                    text += "&";
                 text += tArguments[i]->argument->name + ", ";
             }
             text = text.substr(0, text.size() - 2);            // Remove last ", "
@@ -829,7 +929,8 @@ public:
 
 
 void processTensorFunction(const Block& block, const string& code, Sink& sink) {
-    vector<SimpleBlock> simpleBlocks = templatePreprocessor(block);
+    vector<SimpleBlock> simpleBlocks = replaceGridBase(block);
+//    vector<SimpleBlock> simpleBlocks = templatePreprocessor(block);
 
     for(size_t i = 0; i < simpleBlocks.size(); i++) {
         TensorProcessor tensorProcessor = TensorProcessor(simpleBlocks[i], code, sink);

@@ -99,6 +99,22 @@ void Grid<T>::swap(Grid<T>& other) {
 	T* dswap = other.mData;
 	other.mData = mData;
 	mData = dswap;
+
+        bool dExtData = other.extData;
+        other.extData = extData;
+        extData = dExtData;
+}
+
+template<class T>
+void Grid<T>::setData(Grid<T>& other) {
+        if (other.getSizeX() != getSizeX() || other.getSizeY() != getSizeY() || other.getSizeZ() != getSizeZ())
+                errMsg("Grid::swap(): Grid dimensions mismatch.");
+
+        if(extData) {
+            copyFrom(other);
+        } else {
+            mData = other.mData;
+        }
 }
 
 template<class T>

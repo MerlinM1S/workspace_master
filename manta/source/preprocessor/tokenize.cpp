@@ -350,6 +350,8 @@ void processText(const string& text, int baseline, Sink& sink, const Class* pare
                                     blockType = BlockTypePython;
                                 if(word == "TKERNEL")
                                     blockType = BlockTypeTKernel;
+                                if(word == "TPYTHON")
+                                    blockType = BlockTypeTPython;
 
                                 if(blockType != BlockTypeNone) {
                                         vector<Token> tokens;

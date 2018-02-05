@@ -215,6 +215,9 @@ public:
 	template<class S> Grid<T>& operator/=(const Grid<S>& a);
 	template<class S> Grid<T>& operator/=(const S& a);
 	Grid<T>& safeDivide(const Grid<T>& a);    
+
+	//! Set data with the data of another grid (data only moved if extData=true)
+	void setData(Grid<T>& other);
 	
 	//! Swap data with another grid (no actual data is moved)
 	void swap(Grid<T>& other);
