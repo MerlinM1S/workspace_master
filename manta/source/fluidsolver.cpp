@@ -25,7 +25,7 @@ namespace Manta {
 template<class T>
 void FluidSolver::GridStorage<T>::free() {
 	if (used != 0)
-		errMsg("can't clean grid cache, some grids are still in use");
+                errMsg("can't clean grid cache, some grids are still in use.");
 	for(size_t i = 0; i<grids.size(); i++)
 		delete[] grids[i];
 	grids.clear();

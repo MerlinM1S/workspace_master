@@ -45,7 +45,7 @@ class PbClass {
 public:
 	PbClass(FluidSolver* parent, const std::string& name="");
 	PbClass(const PbClass& a);
-	virtual ~PbClass();
+	virtual ~PbClass() {}		// Local implementation necessary for Tensorflow 
 
 	void setName(const std::string& name) { mName = name; }
 	std::string getName() const { return mName; }

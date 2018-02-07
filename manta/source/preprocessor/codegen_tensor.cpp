@@ -99,10 +99,8 @@ struct SimpleBlock {
 };
 
 
-vector<SimpleBlock> templatePreprocessor(const Block& block) {
-    vector<SimpleBlock> result;
-
-    result.push_back(SimpleBlock(block));
+vector<SimpleBlock> templatePreprocessor(vector<SimpleBlock> &blocks) {
+    vector<SimpleBlock> result = blocks;
 
     string dataTypes[] = {"int", "float", "Vec3"};
 
@@ -122,6 +120,10 @@ vector<SimpleBlock> templatePreprocessor(const Block& block) {
 
             for(size_t j = 0; j < cBlock->func.arguments.size();  j++) {
                 Argument argument = cBlock->func.arguments[j];
+
+                if(removedTemplate.compare(argument.type.name) == 0) {
+                    argument.type.name = nType;
+                }
 
                 List<Type> nTemplates;
                 for(size_t k = 0; k < argument.type.templateTypes.size(); k++) {
@@ -170,6 +172,8 @@ vector<SimpleBlock> templatePreprocessor(const Block& block) {
 
     return result;
 }
+
+
 
 
 vector<SimpleBlock> replaceGridBase(const Block& block) {
@@ -248,7 +252,7 @@ vector<SimpleBlock> replaceGridBase(const Block& block) {
 
 
 enum TType {
-    TTypeMACGrid, TTypeFlagGrid, TTypeGridFloat, TTypeGridInt, TTypeGridVec3, TTypeVec3, TTypeFloat, TTypeInt, TTypeBool
+    TTypeMACGrid, TTypeFlagGrid, TTypeGridFloat, TTypeGridInt, TTypeGridVec3, TTypeGridBool, TTypeVec3, TTypeFloat, TTypeInt, TTypeBool
 };
 
 class TTypeOp {
@@ -298,6 +302,13 @@ public:
             cName = "Grid<float>";
             name = "float";
             hName = "float";
+            isConst = false;
+            promisedDims = 4;
+            break;
+        case TTypeGridBool:
+            cName = "Grid<bool>";
+            name = "bool";
+            hName = "bool";
             isConst = false;
             promisedDims = 4;
             break;
@@ -353,6 +364,7 @@ public:
         switch(tType) {
         case TTypeGridInt:
         case TTypeGridFloat:
+        case TTypeGridBool:
         case TTypeFlagGrid:
             return cName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);\r\n";
         case TTypeGridVec3:
@@ -395,6 +407,7 @@ public:
         typeConverter["Grid<Real>"] = TTypeOp(TTypeGridFloat);
         typeConverter["Grid<int>"]  = TTypeOp(TTypeGridInt);
         typeConverter["Grid<Vec3>"] = TTypeOp(TTypeGridVec3);
+        typeConverter["Grid<bool>"] = TTypeOp(TTypeGridBool);
         typeConverter["Vec3"]       = TTypeOp(TTypeVec3);
         typeConverter["Real"]       = TTypeOp(TTypeFloat);
         typeConverter["float"]      = TTypeOp(TTypeFloat);
@@ -902,7 +915,7 @@ public:
         ss << endl;
 
 
-        ss << "namespace manta {" << endl;
+        ss << "namespace Manta {" << endl;
 
 
         return ss.str();
@@ -929,8 +942,11 @@ public:
 
 
 void processTensorFunction(const Block& block, const string& code, Sink& sink) {
+    if(gMTType != MTTensor)
+        return;
+
     vector<SimpleBlock> simpleBlocks = replaceGridBase(block);
-//    vector<SimpleBlock> simpleBlocks = templatePreprocessor(block);
+    simpleBlocks = templatePreprocessor(simpleBlocks);
 
     for(size_t i = 0; i < simpleBlocks.size(); i++) {
         TensorProcessor tensorProcessor = TensorProcessor(simpleBlocks[i], code, sink);

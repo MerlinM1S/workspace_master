@@ -14,6 +14,10 @@
 #ifndef _FILEIO_H
 #define _FILEIO_H
 
+#ifdef MANTATENSOR
+#define Manta MantaTF
+#endif
+
 #include <string>
 
 namespace Manta {

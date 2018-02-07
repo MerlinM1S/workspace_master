@@ -39,7 +39,7 @@ void usage() {
 	cerr << "     or : prep docgen <dbg_mode> <mt_type> <inputdir> <inputfile> <outputfile>" << endl;
         cerr << "     or : prep link <regfiles...>" << endl;
         cerr << "     or : prep build <cpuinputdir> <gpuinputdir> <libfile> <outputdir>" << endl;
-	exit(1);
+        exit(1);
 }
 
 void doMerge(int argc, char* argv[]) {    

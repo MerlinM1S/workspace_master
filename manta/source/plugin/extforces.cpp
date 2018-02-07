@@ -60,7 +60,7 @@ PYTHON() void addGravityNoScale(FlagGrid& flags, MACGrid& vel, const Vec3& gravi
 }
 
 //! kernel to add Buoyancy force 
-TKERNEL(bnd=1) void KnAddBuoyancy(const FlagGrid& flags, const Grid<Real>& factor, MACGrid& vel, Vec3 strength) {
+KERNEL(bnd=1) void KnAddBuoyancy(const FlagGrid& flags, const Grid<Real>& factor, MACGrid& vel, Vec3 strength) {
 	if (!flags.isFluid(i,j,k)) return;
 	if (flags.isFluid(i-1,j,k))
 		vel(i,j,k).x += (0.5 * strength.x) * (factor(i,j,k)+factor(i-1,j,k));
@@ -71,7 +71,7 @@ TKERNEL(bnd=1) void KnAddBuoyancy(const FlagGrid& flags, const Grid<Real>& facto
 }
 
 //! add Buoyancy force based on fctor (e.g. smoke density)
-PYTHON() void addBuoyancy(const FlagGrid& flags, const Grid<Real>& density, MACGrid& vel, Vec3 gravity, Real coefficient=1.) {
+TPYTHON() void addBuoyancy(const FlagGrid& flags, const Grid<Real>& density, MACGrid& vel, Vec3 gravity, Real coefficient=1.) {
 	Vec3 f = -gravity * flags.getParent()->getDt() / flags.getParent()->getDx() * coefficient;
 	KnAddBuoyancy(flags,density, vel, f);
 }

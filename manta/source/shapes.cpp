@@ -58,6 +58,14 @@ void ApplyShapeToGridSmooth (Grid<T>* grid, Grid<Real>& phi, Real sigma, Real sh
 		(*grid)(i,j,k) = value*(0.5f*(1.0f-p/sigma));
 }
 
+//! Kernel: Apply a shape to a grid, setting value inside
+TKERNEL() template<class T>
+void ApplyMaskToGrid (Grid<T>* grid, const Grid<int>* mask, const T value, const FlagGrid* respectFlags) {
+        if (respectFlags && respectFlags->isObstacle(i,j,k))
+                return;
+        (*grid)(i,j,k) = (*mask)(i,j,k)*value;
+}
+
 //! Kernel: Apply a shape to a MAC grid, setting value inside
 KERNEL() void ApplyShapeToMACGrid (MACGrid* grid, Shape* shape, Vec3 value, FlagGrid* respectFlags) 
 {

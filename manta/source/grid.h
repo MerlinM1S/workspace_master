@@ -26,7 +26,7 @@ class LevelsetGrid;
 //! Base class for all grids
 PYTHON() class GridBase : public PbClass {
 public:
-	enum GridType { TypeNone = 0, TypeReal = 1, TypeInt = 2, TypeVec3 = 4, TypeMAC = 8, TypeLevelset = 16, TypeFlags = 32 };
+	enum GridType { TypeNone = 0, TypeReal = 1, TypeInt = 2, TypeVec3 = 4, TypeMAC = 8, TypeLevelset = 16, TypeFlags = 32, TypeBool = 64 };
 		
 	PYTHON() GridBase(FluidSolver* parent);
 	
@@ -236,6 +236,7 @@ private:
 PYTHON() alias Grid<int>  IntGrid;
 PYTHON() alias Grid<Real> RealGrid;
 PYTHON() alias Grid<Vec3> VecGrid;
+PYTHON() alias Grid<bool> BoolGrid;
 
 //! Special function for staggered grids
 PYTHON() class MACGrid : public Grid<Vec3> {

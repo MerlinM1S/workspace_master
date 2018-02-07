@@ -47,10 +47,6 @@ PbClass::PbClass(const PbClass& a) : mParent(a.mParent), mName("_unnamed"), mHid
 {
 }
 
-PbClass::~PbClass() 
-{
-}
-
 void PbClass::checkParent() {
 	if (getParent() == NULL) {
 		errMsg("New class " + mName + ": no parent given -- specify using parent=xxx !");

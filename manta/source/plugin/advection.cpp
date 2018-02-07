@@ -271,7 +271,7 @@ void fnAdvectSemiLagrange(FluidSolver* parent, const FlagGrid& flags, const MACG
         SemiLagrange<T> (flags, vel, fwd, orig, dt, levelset, orderSpace);
 	
         if (order == 1) {
-                orig.setData(fwd);
+                orig.swap(fwd);
         }
         else if (order == 2) { // MacCormack
                 GridType bwd(parent);
@@ -286,7 +286,7 @@ void fnAdvectSemiLagrange(FluidSolver* parent, const FlagGrid& flags, const MACG
                 // clamp values
                 MacCormackClamp<T> (flags, vel, newGrid, orig, fwd, dt, clampMode);
 		
-                orig.setData(newGrid);
+                orig.swap(newGrid);
         }
 }
 
@@ -382,7 +382,7 @@ void fnAdvectSemiLagrange<MACGrid>(FluidSolver* parent, const FlagGrid& flags, c
 
 	if (order == 1) {
 		if (openBounds) applyOutflowBC(flags, fwd, orig, dt, bWidth);
-                orig.setData(fwd);
+                orig.swap(fwd);
 	}
 	else if (order == 2) { // MacCormack 
 		MACGrid bwd(parent);
@@ -398,7 +398,7 @@ void fnAdvectSemiLagrange<MACGrid>(FluidSolver* parent, const FlagGrid& flags, c
 		MacCormackClampMAC (flags, vel, newGrid, orig, fwd, dt, clampMode); 
 		
 		if (openBounds) applyOutflowBC(flags, newGrid, orig, dt, bWidth);
-                orig.setData(newGrid);
+                orig.swap(newGrid);
 	}
 }
 

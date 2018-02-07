@@ -4,14 +4,9 @@ import numpy as np
 import random
 import mantatensor as mt
 
+from numpy import linalg as LA
+
 from PIL import Image
-
-from manta import *
-
-
-test_empty_module = tf.load_op_library('/home/ansorge/tensorflow/bazel-bin/tensorflow/core/mantatensor/test_empty.so')
-test_empty = test_empty_module.test_empty
-
 
 
 def randomizeFloatArray(array):

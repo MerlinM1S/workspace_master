@@ -6,7 +6,7 @@
 
 #import pdb; pdb.set_trace()
 
-#from manta import *
+from manta import *
 import random
 import sys
 
@@ -45,7 +45,7 @@ solver.init()
 
 mtd.printVecArray(solver.getVelocityArray(), batch = 0)
 #printVecArray(solver.densityGrid)
-'''
+
 mantaFluidSolver   = FluidSolver(name='main', gridSize = vec3(width, height, depth))
 
 # prepare grids
@@ -54,20 +54,18 @@ mantaVel      = mantaFluidSolver.create(MACGrid)
 mantaDensity  = mantaFluidSolver.create(RealGrid)
 mantaPressure = mantaFluidSolver.create(RealGrid)
 
-mantaFlags.initDomain()
+mantaFlags.initDomain(boundaryWidth=0)
 mantaFlags.fillGrid()
 
-copyArrayToGridVec3( source=solver.getVelocityArray(), target=mantaVel )
+#copyArrayToGridVec3( source=solver.getVelocityArray(), target=mantaVel )
 copyArrayToGridReal( source=solver.getDensityArray(), target=mantaDensity )
 
 
 
 addBuoyancy(density=mantaDensity, vel=mantaVel, gravity=vec3(0,-6e-4,0), flags=mantaFlags)
-'''
-solver.addBuoyancy([0,-6e-4,0])
 
 
-'''
+
 mantaVelArray = np.empty((width, height, depth, 3), dtype=np.float)
 copyGridToArrayVec3( source=mantaVel, target=mantaVelArray )
 #mantaVelArray = np.swapaxes(tMantaVelArray, 0, 1)
@@ -75,22 +73,9 @@ copyGridToArrayVec3( source=mantaVel, target=mantaVelArray )
 mantaDensityArray = np.empty((width, height, depth), dtype=np.float)
 copyGridToArrayReal( source=mantaDensity, target=mantaDensityArray )
 #mantaDensityArray = np.swapaxes(tMantaDensityArray, 0, 2)
-'''
 
 
 
 print "manta:\r\n"
-
-#printVecGrid(mantaVel, width, height, depth)
-print "\r\n"
-#mtd.printVecArray(mantaVelArray, batches = false)
-
-print "\r\n"
-
-
-print "tensormanta:\r\n"
-#mtd.getL2Error(solver.getVelocityArray()[0, :, :, :, :] , mantaVelArray)
-
-mtd.printVecArray(solver.getVelocityArray(), batch = 0)
-
+mtd.printVecArray(mantaVelArray, batches = false)
 

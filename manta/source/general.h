@@ -25,6 +25,10 @@
 #ifndef _GENERAL_H
 #define _GENERAL_H
 
+#ifdef MANTATENSOR
+#define Manta MantaTF
+#endif
+
 #include <iostream>
 #include <sstream>
 #include <cmath>
