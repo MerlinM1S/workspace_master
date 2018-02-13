@@ -40,7 +40,6 @@ template<class T> inline GridBase::GridType typeList() { return GridBase::TypeNo
 template<> inline GridBase::GridType typeList<Real>()  { return GridBase::TypeReal; }
 template<> inline GridBase::GridType typeList<int>()   { return GridBase::TypeInt;  }
 template<> inline GridBase::GridType typeList<Vec3>()  { return GridBase::TypeVec3; }
-template<> inline GridBase::GridType typeList<bool>()  { return GridBase::TypeBool; }
 
 template<class T>
 Grid<T>::Grid(FluidSolver* parent, bool show)
@@ -114,6 +113,7 @@ void Grid<T>::setData(Grid<T>& other) {
         if(extData) {
             copyFrom(other);
         } else {
+            mParent->freeGridPointer<T>(mData);
             mData = other.mData;
             other.extData = true;
         }

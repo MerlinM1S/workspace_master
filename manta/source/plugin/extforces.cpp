@@ -173,7 +173,7 @@ PYTHON() void setInflowBcs(MACGrid& vel, string dir, Vec3 value) {
 // set obstacle boundary conditions
 
 //! set no-stick wall boundary condition between ob/fl and ob/ob cells
-KERNEL() void KnSetWallBcs(FlagGrid& flags, MACGrid& vel) {
+TKERNEL() void KnSetWallBcs(const FlagGrid& flags, MACGrid& vel) {
 
 	bool curFluid = flags.isFluid(i,j,k);
 	bool curObs   = flags.isObstacle(i,j,k);
@@ -200,8 +200,8 @@ KERNEL() void KnSetWallBcs(FlagGrid& flags, MACGrid& vel) {
 }
 
 //! set wall BCs for fill fraction mode, note - only needs obstacle SDF
-KERNEL() void KnSetWallBcsFrac(FlagGrid& flags, MACGrid& vel, MACGrid& velTarget,
-							Grid<Real>* phiObs, const int &boundaryWidth=0) 
+KERNEL() void KnSetWallBcsFrac(const FlagGrid& flags, const MACGrid& vel, MACGrid& velTarget,
+                                                        const Grid<Real>* phiObs, const int &boundaryWidth=0)
 { 
 	bool curFluid = flags.isFluid(i,j,k);
 	bool curObs   = flags.isObstacle(i,j,k);
@@ -287,7 +287,7 @@ KERNEL() void KnSetWallBcsFrac(FlagGrid& flags, MACGrid& vel, MACGrid& velTarget
 
 //! set zero normal velocity boundary condition on walls
 // (optionally with second order accuracy using the obstacle SDF , fractions grid currentlyl not needed)
-PYTHON() void setWallBcs(FlagGrid& flags, MACGrid& vel, MACGrid* fractions = 0, Grid<Real>* phiObs = 0, int boundaryWidth=0) {
+PYTHON() void setWallBcs(const FlagGrid& flags, MACGrid& vel, const MACGrid* fractions = 0, const Grid<Real>* phiObs = 0, const int boundaryWidth=0) {
 	if(!phiObs) {
 		KnSetWallBcs(flags, vel);
 	} else {

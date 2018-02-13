@@ -35,13 +35,19 @@ height = int(res*1.5)
 depth = res
 random.seed(seed)
 
-slice = depth/2
+imgScale = 6
+
+slice = int(depth/2.0 + 0.5)
 
 
 solver = mtd.MantaSolverTest(width, height, depth, batches = 1)
 #solver.setDensityValue(1)
-
-solver.randomizeDensity()
+#solver.setDensityValueS(1, 3)
+#solver.setDensityValueS(1, 2)
+#solver.setDensityValue(1, 1)
+#solver.setDensityValue(1, 0)
+#solver.pseudoRandomizeDensity()
+#solver.randomizeDensity()
 #solver.pseudoRandomizeVelocity()
 #solver.randomizeVelocity()
 
@@ -70,14 +76,16 @@ mantaFlags.fillGrid()
 copyArrayToGridVec3( source=mtd.prepareMantaArray(solver.getVelocityArray(), batch = testBatch), target=mantaVel )
 copyArrayToGridReal( source=mtd.prepareMantaArray(solver.getDensityArray(), batch = testBatch), target=mantaDensity )
 
+#mtd.printArray(solver.getDensityArray())
+#mtd.printGrid(mantaDensity, width, height, depth)
+
+
+
 
 mantaSource = mantaFluidSolver.create(Cylinder, center=vec3(0.5*width, 0.1*height, 0.5*depth), radius=res*0.14, z=vec3(0, 0.02*height, 0))
+mantaSource.applyToGrid(grid=mantaDensity, value=1)
 
 
-
-
-
-'''
 for t in range(50):
 	mantaSource.applyToGrid(grid=mantaDensity, value=1)
 		
@@ -85,37 +93,41 @@ for t in range(50):
 	advectSemiLagrange(flags=mantaFlags, vel=mantaVel, grid=mantaVel,     order=1)
 	#resetOutflow(flags=mantaFlags,real=mantaDensity) 
 
-	#setWallBcs(flags=mantaFlags, vel=mantaVel)    
+	setWallBcs(flags=mantaFlags, vel=mantaVel)    
 	addBuoyancy(density=mantaDensity, vel=mantaVel, gravity=vec3(0,-6e-4,0), flags=mantaFlags)
 
 	#solvePressure(flags=mantaFlags, vel=mantaVel, pressure=mantaPressure)
 	
 	#timings.display()    
 	#mantaFluidSolver.step()
-'''
 
 
-addBuoyancy(density=mantaDensity, vel=mantaVel, gravity=vec3(0,-0.01,0), flags=mantaFlags)
+
+#addBuoyancy(density=mantaDensity, vel=mantaVel, gravity=vec3(0,-0.1,0), flags=mantaFlags)
 	
-mtd.createImageGrid("den", mantaDensity, width, height, slice)
-mtd.createImageGrid("vel", mantaVel, width, height, slice)
+mtd.createImageGrid("manta_den", mantaDensity, width, height, depth, slice, scale = imgScale)
+mtd.createImageGrid("manta_vel", mantaVel, width, height, depth, slice, scale = imgScale)
+
+#mtd.printGrid(mantaVel, width, height, depth)
+
+solver.applyInflow(source.getMask(), 1.0)
 
 
-
-'''
 for t in range(50):
     solver.applyInflow(source.getMask(), 1.0)
 
     solver.advectSemiLagrangeDensity()
     solver.advectSemiLagrangeVelocity()
 
+    solver.setWallBcs()
     solver.addBuoyancy([0,-6e-4,0])
-'''
 
-solver.addBuoyancy([0,-0.01,0])
 
-mtd.createImage("den", solver.getDensityArray(), slice) 
-mtd.createImage("vel", solver.getVelocityArray(), slice) 
+
+#solver.addBuoyancy([0, -0.1,0])
+
+mtd.createImage("tensor_den", solver.getDensityArray(), slice, scale = imgScale) 
+mtd.createImage("tensor_vel", solver.getVelocityArray(), slice, scale = imgScale) 
 
 
 '''

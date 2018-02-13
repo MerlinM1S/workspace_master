@@ -14,6 +14,46 @@
 using namespace std;
 
 
+class CodeGenerator {
+private:
+    int intend;
+
+    stringstream ss;
+
+public:
+    CodeGenerator() : intend(0) { }
+
+    void addLine(string text, int intendMod = 0) {
+        insertIntend();
+        ss << text << endl;
+        intend += intendMod;
+    }
+
+    void prepareText() {
+        insertIntend();
+    }
+
+    void addText(string text) {
+        ss << text;
+    }
+
+    void newLine() {
+        ss << endl;
+    }
+
+    string toString() {
+        return ss.str();
+    }
+
+private:
+    void insertIntend() {
+        for(int i = 0; i < intend; i++) {
+            ss << "\t";
+        }
+    }
+};
+
+
 
 void stringReplace(string& source, string const& find, string const& replace)
 {
@@ -223,27 +263,27 @@ vector<SimpleBlock> replaceGridBase(const Block& block) {
     }
 
 
-        for(size_t i = 0; i < result.size(); i++) {
-            cout << result[i].mantaFuncName << "/ " << result[i].tensorFuncName << ": ";
+//        for(size_t i = 0; i < result.size(); i++) {
+//            cout << result[i].mantaFuncName << "/ " << result[i].tensorFuncName << ": ";
 
-            for(size_t j = 0; j < result[i].block.func.arguments.size();  j++) {
+//            for(size_t j = 0; j < result[i].block.func.arguments.size();  j++) {
 
-                cout << result[i].block.func.arguments[j].type.name;
-
-
-                if(result[i].block.func.arguments[j].type.isTemplated()) {
-                    cout << "<";
-                    for(size_t k = 0; k < result[i].block.func.arguments[j].type.templateTypes.size(); k++) {
-                        cout << result[i].block.func.arguments[j].type.templateTypes[k].name;
-                    }
-                    cout << ">";
-                }
+//                cout << result[i].block.func.arguments[j].type.name;
 
 
-                cout << ", ";
-            }
-            cout << endl;
-        }
+//                if(result[i].block.func.arguments[j].type.isTemplated()) {
+//                    cout << "<";
+//                    for(size_t k = 0; k < result[i].block.func.arguments[j].type.templateTypes.size(); k++) {
+//                        cout << result[i].block.func.arguments[j].type.templateTypes[k].name;
+//                    }
+//                    cout << ">";
+//                }
+
+
+//                cout << ", ";
+//            }
+//            cout << endl;
+//        }
 
 
     return result;
@@ -252,7 +292,7 @@ vector<SimpleBlock> replaceGridBase(const Block& block) {
 
 
 enum TType {
-    TTypeMACGrid, TTypeFlagGrid, TTypeGridFloat, TTypeGridInt, TTypeGridVec3, TTypeGridBool, TTypeVec3, TTypeFloat, TTypeInt, TTypeBool
+    TTypeUnkown, TTypeMACGrid, TTypeFlagGrid, TTypeGridFloat, TTypeGridInt, TTypeGridVec3, TTypeGridBool, TTypeVec3, TTypeFloat, TTypeInt, TTypeBool
 };
 
 class TTypeOp {
@@ -262,7 +302,6 @@ public:
     string hName;           // header type name
     bool isConst;
     int promisedDims;
-
 
     string pName;           // paramter type name
 
@@ -277,6 +316,8 @@ public:
 
     TTypeOp(TType _tType) : tType(_tType) {
         switch(tType) {
+        case TTypeUnkown:
+            break;
         case TTypeMACGrid:
             cName = "MACGrid";
             name = "float";
@@ -360,46 +401,27 @@ public:
             pName += "*";
     }
 
-    string makeVariable(string batch, string baseVariableName, bool constCast) {
-        switch(tType) {
-        case TTypeGridInt:
-        case TTypeGridFloat:
-        case TTypeGridBool:
-        case TTypeFlagGrid:
-            return cName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);\r\n";
-        case TTypeGridVec3:
-        case TTypeMACGrid:
-            return cName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) +  "), true);\r\n";
-        case TTypeVec3:
-            return "Vec3(" +  baseVariableName + " + (3 * " + batch + "));\r\n";
-        default:
-            return baseVariableName + "[" + batch + "];\r\n";
-        }
+    bool isUnkown() {
+        return tType == TTypeUnkown;
     }
 
-private:
-    string AddConstCast(string arrayPointer, bool constCast) {
-        if(constCast) {
-            return "const_cast<" + pName + ">(" +  arrayPointer + ")";
-        } else {
-            return arrayPointer;
-        }
-    }
 };
 
 class TArgument {
 public:
-    const Argument* argument;
     TTypeOp tType;
+
+    const Argument* argument;
 
     int inIndex;
     int outIndex;
 
 
-    TArgument(const Argument* _argument) : argument(_argument){
-        inIndex = -1;
-        outIndex = -1;
+private:
+    TArgument(TTypeOp _tType, const Argument* _argument) : tType(_tType), argument(_argument), inIndex(-1), outIndex(-1) {  }
 
+public:
+    static TArgument* create(const Argument* argument) {
         std::map<std::string, TTypeOp> typeConverter;
         typeConverter["MACGrid"]    = TTypeOp(TTypeMACGrid);
         typeConverter["FlagGrid"]   = TTypeOp(TTypeFlagGrid);
@@ -415,7 +437,34 @@ public:
         typeConverter["bool"]       = TTypeOp(TTypeBool);
 
         if (typeConverter.find(argument->type.toString()) != typeConverter.end()) {
-            tType = typeConverter[argument->type.toString()];
+            return new TArgument(typeConverter[argument->type.toString()], argument);
+        } else if (argument->value.length() > 0){
+            return new TArgument(TTypeOp(TTypeUnkown), argument);
+        } else {
+            return NULL;
+        }
+    }
+
+    bool hasDefaultValue() {
+        return argument->value.length() > 0;
+    }
+
+
+    bool isValid() {
+        return tType.name.length() > 0;
+    }
+
+    void applyIndex(int &_inIndex, int &_outIndex) {
+        if(tType.isUnkown()) {
+            return;
+        }
+
+        inIndex = _inIndex;
+        _inIndex++;
+
+        if(!isTypeConst()) {
+            outIndex = _outIndex;
+            _outIndex++;
         }
     }
 
@@ -540,6 +589,20 @@ public:
         return generateInParam() + generateOutParam();
     }
 
+    string generateMantaParam() {
+        string text = "";
+
+        if(tType.isUnkown()) {
+            text += argument->value;
+        } else {
+            if(argument->type.isPointer)
+                text += "&";
+            text += argument->name;
+        }
+
+
+        return text + ", ";
+    }
 
     string generateCopyInToOutLines() {
         string text = "";
@@ -555,20 +618,59 @@ public:
     }
 
     string generateVariableLine(string batch) {
-        string text;
+        if(tType.isUnkown())
+            return "";
 
-        text +=  tType.cName + " " +  argument->name + " = ";
-
+        string baseVariableName;
         if(outIndex >= 0) {
-            text += tType.makeVariable(batch, getOutputName(), false);
+            baseVariableName = getOutputName();
         } else if (inIndex >= 0){
-            text += tType.makeVariable(batch, getInputName(), true);
+            baseVariableName = getInputName();
+        } else {
+            return "";
         }
 
+        bool constCast = inIndex >= 0;
 
-        return text;
+        switch(tType.tType) {
+        case TTypeGridInt:
+        case TTypeGridFloat:
+        case TTypeGridBool:
+        case TTypeFlagGrid:
+            return AddDefaultCheck(tType.cName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);\r\n");
+        case TTypeGridVec3:
+        case TTypeMACGrid:
+            return AddDefaultCheck(tType.cName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) +  "), true);\r\n");
+        case TTypeVec3:
+            return tType.cName + " " + argument->name + " = Vec3(" +  baseVariableName + " + (3 * " + batch + "));\r\n";
+        default:
+            return tType.cName + " " + argument->name + " = " + baseVariableName + "[" + batch + "];\r\n";
+        }
     }
 
+
+
+private:
+    string AddConstCast(string arrayPointer, bool constCast) {
+        if(constCast) {
+            return "const_cast<" + tType.pName + ">(" +  arrayPointer + ")";
+        } else {
+            return arrayPointer;
+        }
+    }
+
+    string AddDefaultCheck(string makeString) {
+        if(hasDefaultValue()) {
+            string text = "";
+            text += tType.cName + " " + argument->name + " = NULL\r\n";
+            text += "if(" + getInputName() + ") {\r\n";
+            text += argument->name + " = " + makeString;
+            text += "}\r\n";
+            return text;
+        } else {
+            return tType.cName + " " + argument->name + " = " + makeString;
+        }
+    }
 };
 
 
@@ -581,6 +683,8 @@ private:
     List<TArgument*> tArguments;
 
     TArgument* argumentWithHighestDims;
+
+    bool convertable;
 
     string tensor_func_name() {
         return convertToSnake_case(tensorFuncName);
@@ -736,11 +840,11 @@ private:
             text += "\t\t" + mantaFuncName + "(";
 
             for(size_t i = 0; i < tArguments.size(); i++) {
-                if(tArguments[i]->argument->type.isPointer)
-                    text += "&";
-                text += tArguments[i]->argument->name + ", ";
+                text += tArguments[i]->generateMantaParam();
             }
-            text = text.substr(0, text.size() - 2);            // Remove last ", "
+            if(text.size() >= 2) {
+                text = text.substr(0, text.size() - 2);            // Remove last ", "
+            }
 
             text += ");\r\n";
         }
@@ -835,14 +939,14 @@ public:
             int inIndex = 0;
             int outIndex = 0;
             for(unsigned int i = 0; i < block->func.arguments.size(); i++) {
-                TArgument* argument = new TArgument(&(block->func.arguments[i]));
+                TArgument* argument = TArgument::create(&(block->func.arguments[i]));
 
-                argument->inIndex = inIndex;
-                inIndex++;
-                if(!argument->isTypeConst()) {
-                    argument->outIndex = outIndex;
-                    outIndex++;
+                if(!argument) {
+                    convertable = false;
+                    return;
                 }
+
+                argument->applyIndex(inIndex, outIndex);
 
                 tArguments.push_back(argument);
 
@@ -852,73 +956,78 @@ public:
                 }
             }
         }
+        convertable = true;
 
         filename = sink.getFilename() + "wat";
     }
 
+    bool canConvert() {
+        return convertable;
+    }
+
     string generateString() {
-        std::stringstream ss;
+        CodeGenerator codeGenerator;
 
-        ss << endl;
-        ss << endl;
+        codeGenerator.newLine();
+        codeGenerator.newLine();
 
-        ss << "} // namespace" << endl;
+        codeGenerator.addLine("} // namespace");
 
-        ss << endl;
-        ss << endl;
+        codeGenerator.newLine();
+        codeGenerator.newLine();
 
-        ss << "// -------------------------- TENSORFLOW OP ------------------------- " << endl;
+        codeGenerator.addLine("// -------------------------- TENSORFLOW OP ------------------------- ");
 
-        ss << endl;
+        codeGenerator.newLine();
 
-        ss << generateIncludesEtc();
+        codeGenerator.addText(generateIncludesEtc());
 
-        ss << endl;
+        codeGenerator.newLine();
 
-        ss << generateHeader();
+        codeGenerator.addText(generateHeader());
 
-        ss << std::endl;
+        codeGenerator.newLine();
 
-        ss << generateRegisterOP();
+        codeGenerator.addText(generateRegisterOP());
 
-        ss << endl;
-        ss << endl;
+        codeGenerator.newLine();
+        codeGenerator.newLine();
 
-        ss << generateUsingDefs();
+        codeGenerator.addText(generateUsingDefs());
 
-        ss << std::endl;
-        ss << std::endl;
+        codeGenerator.newLine();
+        codeGenerator.newLine();
 
-        ss << generateFuncImplementationCPU();
+        codeGenerator.addText(generateFuncImplementationCPU());
 
-        ss << std::endl;
-        ss << std::endl;
+        codeGenerator.newLine();
+        codeGenerator.newLine();
 
-        ss << generateFuncOP();
+        codeGenerator.addText(generateFuncOP());
 
-        ss << std::endl;
-        ss << std::endl;
+        codeGenerator.newLine();
+        codeGenerator.newLine();
 
-        ss << generateRegisterKernelCPU();
+        codeGenerator.addText(generateRegisterKernelCPU());
 
 //        ss << std::endl;
 //        ss << std::endl;
 
 //        ss << generateRegisterKernelGPU();
 
-        ss << endl;
+        codeGenerator.newLine();
 
 
-        ss << "// ------------------------------------------------------------------ " << endl;
+        codeGenerator.addLine("// ------------------------------------------------------------------ ");
 
-        ss << endl;
-        ss << endl;
-
-
-        ss << "namespace Manta {" << endl;
+        codeGenerator.newLine();
+        codeGenerator.newLine();
 
 
-        return ss.str();
+        codeGenerator.addLine("namespace Manta {");
+
+
+        return codeGenerator.toString();
     }
 
     void write() {
@@ -950,6 +1059,12 @@ void processTensorFunction(const Block& block, const string& code, Sink& sink) {
 
     for(size_t i = 0; i < simpleBlocks.size(); i++) {
         TensorProcessor tensorProcessor = TensorProcessor(simpleBlocks[i], code, sink);
+
+        if(!tensorProcessor.canConvert()) {
+            cout << "Could not convert: " << block.func.name << endl;
+            return;
+        }
+
         sink.buildInfo << tensorProcessor.getOpName() << endl;
         sink.inplace << tensorProcessor.generateString();
     }

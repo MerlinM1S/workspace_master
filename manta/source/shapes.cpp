@@ -63,7 +63,9 @@ TKERNEL() template<class T>
 void ApplyMaskToGrid (Grid<T>* grid, const Grid<int>* mask, const T value, const FlagGrid* respectFlags) {
         if (respectFlags && respectFlags->isObstacle(i,j,k))
                 return;
-        (*grid)(i,j,k) = (*mask)(i,j,k)*value;
+        if((*mask)(i,j,k) == 0)
+            return;
+        (*grid)(i,j,k) = value;
 }
 
 //! Kernel: Apply a shape to a MAC grid, setting value inside

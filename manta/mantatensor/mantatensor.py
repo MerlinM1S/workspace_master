@@ -3,7 +3,11 @@ import numpy as np
 
 
 mantatensor_module = tf.load_op_library('/home/ansorge/tensorflow/bazel-bin/tensorflow/core/mantatensor/mantatensor.so')
+manta_apply_mask_to_grid_int = mantatensor_module.apply_mask_to_grid_int
+manta_apply_mask_to_grid_float = mantatensor_module.apply_mask_to_grid_float
+manta_apply_mask_to_grid_vec3 = mantatensor_module.apply_mask_to_grid_vec3
 manta_add_buoyancy = mantatensor_module.add_buoyancy
+manta_kn_set_wall_bcs = mantatensor_module.kn_set_wall_bcs
 manta_advect_semi_lagrange_mac_grid = mantatensor_module.advect_semi_lagrange_mac_grid
 manta_advect_semi_lagrange_grid_vec3 = mantatensor_module.advect_semi_lagrange_grid_vec3
 manta_advect_semi_lagrange_gridfloat = mantatensor_module.advect_semi_lagrange_gridfloat
@@ -29,9 +33,9 @@ class MantaSolver:
     def initFlagsTensor(self):
         array = np.full((self.batches, self.width, self.height, self.depth, 1), 2, dtype=np.int32)
         for b in range(self.batches):
-            for x in range(1, self.width-1):
+            for x in range(1, self.width - 1):
                 for y in range(1, self.height - 1):
-                    for z in range(1, self.depth - 1):
+            	    for z in range(1, self.depth - 1):
                         array[b, x, y, z] = 1
         self.applyFlagsArray(array)
         
@@ -48,19 +52,22 @@ class MantaSolver:
         step = tf.group(self.velocityTensor.assign(manta_add_buoyancy(self.flagsTensor, self.densityTensor, self.velocityTensor, force, coefficient)))
         self.sess.run(step)
         
-    def advectSemiLagrangeDensity(self, orderSpace = 1):
-        step = tf.group(self.densityTensor.assign(manta_advection(self.densityTensor, self.flagsTensor, self.velocityTensor, self.dt, orderSpace)))
+    def advectSemiLagrangeDensity(self, order = 1, strength = 1.0, orderSpace = 1, openBounds = False, boundaryWidth = 1, clampMode = 1):
+        step = tf.group(self.densityTensor.assign(manta_advect_semi_lagrange_gridfloat(self.flagsTensor, self.velocityTensor, self.densityTensor, order, strength, orderSpace, openBounds, boundaryWidth, clampMode)))
         self.sess.run(step)
-        
-    def advectSemiLagrangeVelocity(self, orderSpace = 1):
-        step = tf.group(self.velocityTensor.assign(manta_advection(self.velocityTensor, self.flagsTensor, self.velocityTensor, self.dt, orderSpace)))
+
+    def advectSemiLagrangeVelocity(self, order = 1, strength = 1.0, orderSpace = 1, openBounds = False, boundaryWidth = 1, clampMode = 1):
+        step = tf.group(self.velocityTensor.assign(manta_advect_semi_lagrange_mac_grid(self.flagsTensor, self.velocityTensor, self.velocityTensor, order, strength, orderSpace, openBounds, boundaryWidth, clampMode)))
         self.sess.run(step)
     
-	'''
-    def applyInflow(self, mask, value):
-        step = tf.group(self.densityTensor.assign(manta_apply_to_array(self.densityTensor, self.flagsTensor, mask, value)))
+    def setWallBcs(self):
+        step = tf.group(self.velocityTensor.assign(manta_kn_set_wall_bcs(self.flagsTensor, self.velocityTensor)))
         self.sess.run(step)
-	'''
+	
+    def applyInflow(self, mask, value):
+        step = tf.group(self.densityTensor.assign(manta_apply_mask_to_grid_float(self.densityTensor, mask, value, self.flagsTensor)))
+        self.sess.run(step)
+	
         
     ## Setter
     def applyVelocityArray(self, velocityArray):

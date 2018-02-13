@@ -7,7 +7,7 @@ class Shape:
         self.height = height
         self.depth = depth
         
-        self.mask = np.empty((width, height, depth, 1), dtype=np.bool_)
+        self.mask = np.empty((width, height, depth, 1), dtype=np.int32)	#np.bool_
         
     def getMask(self):
         return self.mask
