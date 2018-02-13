@@ -15,41 +15,65 @@ using namespace std;
 
 
 class CodeGenerator {
-private:
+public:
     int intend;
 
-    stringstream ss;
+    ostringstream os;
 
 public:
     CodeGenerator() : intend(0) { }
 
     void addLine(string text, int intendMod = 0) {
-        insertIntend();
-        ss << text << endl;
-        intend += intendMod;
-    }
+        if(intendMod < 0)
+            intend += intendMod;
 
-    void prepareText() {
         insertIntend();
+        os << text << endl;
+
+        if(intendMod > 0)
+            intend += intendMod;
     }
 
     void addText(string text) {
-        ss << text;
+        os << text;
     }
 
     void newLine() {
-        ss << endl;
+        os << endl;
     }
 
     string toString() {
-        return ss.str();
+        return os.str();
     }
 
 private:
     void insertIntend() {
         for(int i = 0; i < intend; i++) {
-            ss << "\t";
+            os << "\t";
         }
+    }
+};
+
+class StringList {
+private:
+    vector<string> sList;
+
+public:
+    void add(string text) {
+        if(text.length() > 0) {
+            sList.push_back(text);
+        }
+    }
+
+    string toString() {
+        string text = "";
+        for(size_t i = 0; i < sList.size(); i++) {
+            text += sList[i];
+            if(sList.size() - 1 > i) {
+                text += ", ";
+            }
+        }
+        return text;
     }
 };
 
@@ -488,86 +512,81 @@ public:
         return getOutputName() + "_tensor";
     }
 
-    string generateDimSizeLines() {
-        string text;
-
+    void addDimSizeLines(CodeGenerator& codeGenerator) {
         string dimNames[4] = {"batches", "depth", "height", "width"};
         for(int i = 0; i < 4; i++) {
-            text += "\t\tlong " + dimNames[i] + " = ";
+            string lineOp = "long " + dimNames[i] + " = ";
 
             if(tType.promisedDims > i)
-               text += getInTensorName() + ".shape().dim_size(" + SSTR(i) + ");\r\n";
+               lineOp += getInTensorName() + ".shape().dim_size(" + SSTR(i) + ");";
             else
-               text += "-1;\r\n";
+               lineOp += "-1;";
+
+            codeGenerator.addLine(lineOp);
         }
 
-        return text;
+
+        codeGenerator.addLine("DimSize dimSize = DimSize(batches, depth, height, width);");    // TODO might be: batches, width, depth, height
     }
 
-    string generateInputLine() {
-        if(inIndex < 0)
-            return "";
-        else
-            return "\t.Input(\"" + getInputName() + ": " + tType.hName + "\")" + "\r\n";
+    void addInputLine(CodeGenerator& codeGenerator) {
+        if(inIndex >= 0) {
+            codeGenerator.addLine(".Input(\"" + getInputName() + ": " + tType.hName + "\")");
+        }
     }
 
-    string generateOutputLine() {
-        if(outIndex < 0)
-            return "";
-        else
-            return "\t.Output(\"" + getOutputName() + ": " + tType.hName + "\")" + "\r\n";
+    void addOutputLine(CodeGenerator& codeGenerator) {
+        if(outIndex >= 0) {
+            codeGenerator.addLine(".Output(\"" + getOutputName() + ": " + tType.hName + "\")");
+        }
     }
 
-    string generateShapeInferenceLine() {
-        if(outIndex < 0 || inIndex < 0)
-            return "";
-        else
-            return "\t\tc->set_output(" + SSTR(outIndex) + ", c->input(" + SSTR(inIndex) + "));" + "\r\n";
+    void addShapeInferenceLine(CodeGenerator& codeGenerator) {
+        if(outIndex >= 0 && inIndex >= 0) {
+            codeGenerator.addLine("c->set_output(" + SSTR(outIndex) + ", c->input(" + SSTR(inIndex) + "));");
+        }
     }
 
     string generateInHeaderParam() {
         if(inIndex < 0)
             return "";
         else
-            return "const " + tType.pName + " " + getInputName() + ", ";
+            return "const " + tType.pName + " " + getInputName();
     }
 
     string generateOutHeaderParam() {
         if(outIndex < 0)
             return "";
         else
-            return tType.pName + " " + getOutputName() + ", ";
+            return tType.pName + " " + getOutputName();
     }
 
-    string generateHeaderParam() {
-        return generateInHeaderParam() + generateOutHeaderParam();
-    }
-
-    string generateInTensorLines() {
-        string text = "";
-        if(inIndex >= 0) {
-            text += "\t\tconst Tensor& " + getInTensorName() + " = context->input(" + SSTR(inIndex) + ");\r\n";
-
-            if(tType.isScalar()) {
-                text += "\t\tconst " + tType.pName + " " + getInputName() + " = " + getInTensorName() + ".scalar<" + tType.name + ">().data()[0];\r\n";
-            } else {
-                text += "\t\tconst " + tType.pName + " " + getInputName() + " = " + getInTensorName() + ".flat<" + tType.name + ">().data();\r\n";
-            }
-
-            text += "\r\n";
+    void addInTensorLines(CodeGenerator& codeGenerator) {
+        if(inIndex < 0) {
+            return;
         }
-        return text;
+
+        codeGenerator.addLine("const Tensor& " + getInTensorName() + " = context->input(" + SSTR(inIndex) + ");");
+
+        if(tType.isScalar()) {
+            codeGenerator.addLine("const " + tType.pName + " " + getInputName() + " = " + getInTensorName() + ".scalar<" + tType.name + ">().data()[0];");
+        } else {
+            codeGenerator.addLine("const " + tType.pName + " " + getInputName() + " = " + getInTensorName() + ".flat<" + tType.name + ">().data();");
+        }
+
+        codeGenerator.newLine();
     }
 
-    string generateOutTensorLines() {
-        string text = "";
-        if(outIndex >= 0) {
-            text += "\t\tTensor* " + getOutTensorName() + " = NULL;\r\n";
-            text += "\t\tOP_REQUIRES_OK(context, context->allocate_output(" + SSTR(outIndex) + ", " + getInTensorName() + ".shape(), &" + getOutTensorName() + "));\r\n";
-            text += "\t\t" + tType.pName + " " + getOutputName() + " = " + getOutTensorName() + "->flat<" + tType.name + ">().data();\r\n";
-            text += "\r\n";
+    void addOutTensorLines(CodeGenerator& codeGenerator) {
+        if(outIndex < 0) {
+            return;
         }
-        return text;
+
+        codeGenerator.addLine("Tensor* " + getOutTensorName() + " = NULL;");
+        codeGenerator.addLine("OP_REQUIRES_OK(context, context->allocate_output(" + SSTR(outIndex) + ", " + getInTensorName() + ".shape(), &" + getOutTensorName() + "));");
+        codeGenerator.addLine(tType.pName + " " + getOutputName() + " = " + getOutTensorName() + "->flat<" + tType.name + ">().data();");
+
+        codeGenerator.newLine();
     }
 
 
@@ -575,18 +594,14 @@ public:
         if(inIndex < 0)
             return "";
         else
-            return getInputName() + ", ";
+            return getInputName();
     }
 
     string generateOutParam() {
         if(outIndex < 0)
             return "";
         else
-            return getOutputName() + ", ";
-    }
-
-    string generateParam() {
-        return generateInParam() + generateOutParam();
+            return getOutputName();
     }
 
     string generateMantaParam() {
@@ -601,25 +616,21 @@ public:
         }
 
 
-        return text + ", ";
-    }
-
-    string generateCopyInToOutLines() {
-        string text = "";
-
-        if(outIndex >= 0 && inIndex >= 0) {
-            text += "\tfor(int i = 0; i < dimSize.lengthOf(" + SSTR(tType.promisedDims) + "); i++) {\r\n";
-            text += "\t\t" + getOutputName() + "[i] = " + getInputName() + "[i];\r\n";
-            text += "\t}\r\n";
-            text += "\r\n";
-        }
-
         return text;
     }
 
-    string generateVariableLine(string batch) {
+    void addCopyInToOutLines(CodeGenerator& codeGenerator) {
+        if(outIndex >= 0 && inIndex >= 0) {
+            codeGenerator.addLine("for(int i = 0; i < dimSize.lengthOf(" + SSTR(tType.promisedDims) + "); i++) {", 1);
+            codeGenerator.addLine(getOutputName() + "[i] = " + getInputName() + "[i];");
+            codeGenerator.addLine("}", -1);
+            codeGenerator.newLine();
+        }
+    }
+
+    void addMantaVariableCreation(CodeGenerator& codeGenerator, string batch) {
         if(tType.isUnkown())
-            return "";
+            return;
 
         string baseVariableName;
         if(outIndex >= 0) {
@@ -627,7 +638,7 @@ public:
         } else if (inIndex >= 0){
             baseVariableName = getInputName();
         } else {
-            return "";
+            return;
         }
 
         bool constCast = inIndex >= 0;
@@ -637,14 +648,18 @@ public:
         case TTypeGridFloat:
         case TTypeGridBool:
         case TTypeFlagGrid:
-            return AddDefaultCheck(tType.cName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);\r\n");
+            AddDefaultCheck(codeGenerator, tType.cName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);");
+            break;
         case TTypeGridVec3:
         case TTypeMACGrid:
-            return AddDefaultCheck(tType.cName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) +  "), true);\r\n");
+            AddDefaultCheck(codeGenerator, tType.cName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) +  "), true);");
+            break;
         case TTypeVec3:
-            return tType.cName + " " + argument->name + " = Vec3(" +  baseVariableName + " + (3 * " + batch + "));\r\n";
+            codeGenerator.addLine(tType.cName + " " + argument->name + " = Vec3(" +  baseVariableName + " + (3 * " + batch + "));");
+            break;
         default:
-            return tType.cName + " " + argument->name + " = " + baseVariableName + "[" + batch + "];\r\n";
+            codeGenerator.addLine(tType.cName + " " + argument->name + " = " + baseVariableName + "[" + batch + "];");
+            break;
         }
     }
 
@@ -659,16 +674,14 @@ private:
         }
     }
 
-    string AddDefaultCheck(string makeString) {
+    void AddDefaultCheck(CodeGenerator& codeGenerator, string makeString) {
         if(hasDefaultValue()) {
-            string text = "";
-            text += tType.cName + " " + argument->name + " = NULL\r\n";
-            text += "if(" + getInputName() + ") {\r\n";
-            text += argument->name + " = " + makeString;
-            text += "}\r\n";
-            return text;
+            codeGenerator.addLine(tType.cName + " " + argument->name + " = NULL");
+            codeGenerator.addLine("if(" + getInputName() + ") {", 1);
+            codeGenerator.addLine(argument->name + " = " + makeString);
+            codeGenerator.addLine("}", -1);
         } else {
-            return tType.cName + " " + argument->name + " = " + makeString;
+            codeGenerator.addLine(tType.cName + " " + argument->name + " = " + makeString);
         }
     }
 };
@@ -708,222 +721,208 @@ private:
         DeviceTypeGeneral, DeviceTypeCPU, DeviceTypeGPU
     };
 
-    string generateIncludesEtc() {
-        string result = "";
-
-        result += "#define EIGEN_USE_THREADS\r\n";
-        result += "\r\n";
-        result += "#if GOOGLE_CUDA\r\n";
-        result += "#define EIGEN_USE_GPU\r\n";
-        result += "#endif\r\n";
-        result += "\r\n";
-        result += "#include \"dim_size.h\"\r\n";
-        result += "\r\n";
-        result += "#include \"tensorflow/core/framework/op.h\"\r\n";
-        result += "#include \"tensorflow/core/framework/shape_inference.h\"\r\n";
-        result += "#include \"tensorflow/core/framework/op_kernel.h\"\r\n";
-        result += "\r\n";
-        result += "using namespace tensorflow;\r\n";
-        result += "using namespace Manta;\r\n";
-
-        return result;
+    void addIncludesEtc(CodeGenerator &codeGenerator) {
+        codeGenerator.addLine("#define EIGEN_USE_THREADS");
+        codeGenerator.newLine();
+        codeGenerator.addLine("#if GOOGLE_CUDA");
+        codeGenerator.addLine("#define EIGEN_USE_GPU");
+        codeGenerator.addLine("#endif");
+        codeGenerator.newLine();
+        codeGenerator.newLine();
+        codeGenerator.addLine("#include \"dim_size.h\"\r\n");
+        codeGenerator.newLine();
+        codeGenerator.addLine("#include \"tensorflow/core/framework/op.h\"");
+        codeGenerator.addLine( "#include \"tensorflow/core/framework/shape_inference.h\"");
+        codeGenerator.addLine("#include \"tensorflow/core/framework/op_kernel.h\"");
+        codeGenerator.newLine();
+        codeGenerator.addLine("using namespace tensorflow;");
+        codeGenerator.addLine("using namespace Manta;");
     }
 
-    string generateFuncHeader(DeviceType deviceType) {
-        string text;
+    void addHeader(CodeGenerator &codeGenerator) {
+        StringList arguments;
+        string opLine = "";
 
+        codeGenerator.addLine("template <typename Device>");
+        codeGenerator.addLine("struct " + tensorFuncName_Functor() + " {", 1);
+        opLine += "void operator()(";
+        arguments.add("const Device& d");
 
-        string deviceName;
-        switch(deviceType) {
-        case DeviceTypeGeneral:
-            deviceName = "Device";
-            break;
-        case DeviceTypeCPU:
-            deviceName = "CPUDevice";
-            break;
-        case DeviceTypeGPU:
-            deviceName = "GPUDevice";
-            break;
-        }
-
-
-        switch(deviceType) {
-        case DeviceTypeGeneral:
-            text += "template <typename Device>\r\n";
-            text += "struct " + tensorFuncName_Functor() + " {\r\n";
-            text += "\tvoid operator()(const Device& d, ";
-            break;
-        case DeviceTypeCPU:
-        case DeviceTypeGPU:
-            text += "template <>\r\n";
-            text += "void " + tensorFuncName_Functor() + "<" + deviceName + ">::operator()(const " + deviceName + "& d, ";
-            break;
-        }
-
-        text += "const DimSize dimSize, ";
+        arguments.add("const DimSize dimSize");
         for(size_t i = 0; i < tArguments.size(); i++) {
-            text += tArguments[i]->generateHeaderParam();
+            arguments.add(tArguments[i]->generateInHeaderParam());
+            arguments.add(tArguments[i]->generateOutHeaderParam());
         }
-        text = text.substr(0, text.size() - 2);            // Remove last ", "
-        text += ")";
+        opLine += arguments.toString();
+        opLine += ");";
 
-        return text;
+        codeGenerator.addLine(opLine);
+        codeGenerator.addLine("};", -1);
     }
 
-    string generateHeader() {
-        string text;
-
-        text += generateFuncHeader(DeviceTypeGeneral) + ";\r\n";
-        text += "};\r\n";
-
-        return text;
-    }
-
-    string generateRegisterOP() {
-        string text;
-
-        text += "REGISTER_OP(\"" + TensorFuncName() + "\")\r\n";
+    void addRegisterOP(CodeGenerator& codeGenerator) {
+        codeGenerator.addLine("REGISTER_OP(\"" + TensorFuncName() + "\")", 1);
 
         for(size_t i = 0; i < tArguments.size(); i++) {
-            text += tArguments[i]->generateInputLine();
+            tArguments[i]->addInputLine(codeGenerator);
         }
 
         for(size_t i = 0; i < tArguments.size(); i++) {
-            text += tArguments[i]->generateOutputLine();
+            tArguments[i]->addOutputLine(codeGenerator);
         }
 
         {
-            text += "\t.SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {\r\n";
+            codeGenerator.addLine(".SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {", 1);
             for(size_t i = 0; i < tArguments.size(); i++) {
-                text += tArguments[i]->generateShapeInferenceLine();
+                tArguments[i]->addShapeInferenceLine(codeGenerator);
             }
-            text += "\t\treturn Status::OK();\r\n";
-            text += "\t});\r\n";
+            codeGenerator.addLine("return Status::OK();");
+            codeGenerator.addLine("});", -1);
+            codeGenerator.addLine("", -1);
         }
-
-        return text;
     }
 
-    string generateUsingDefs() {
-        string result = "";
-
-        result += "using CPUDevice = Eigen::ThreadPoolDevice;\r\n";
-        result += "using GPUDevice = Eigen::GpuDevice;\r\n";
-
-        return result;
+    void addUsingDefs(CodeGenerator& codeGenerator) {
+        codeGenerator.addLine("using CPUDevice = Eigen::ThreadPoolDevice;");
+        codeGenerator.addLine("using GPUDevice = Eigen::GpuDevice;");
     }
 
-    string generateFuncImplementationCPU() {
-        string text;
 
-        text += generateFuncHeader(DeviceTypeCPU) + " {\r\n";
+    string getDeviceName(DeviceType deviceType) {
+        switch(deviceType) {
+        case DeviceTypeCPU:
+            return "CPUDevice";
+        case DeviceTypeGPU:
+            return "GPUDevice";
+        default:
+            return "Device";
+        }
+    }
+
+    void addFuncHeader(CodeGenerator& codeGenerator, DeviceType deviceType) {
+        StringList arguments;
+        string opLine = "";
+        string deviceName = getDeviceName(deviceType);
+
+        codeGenerator.addLine("template <>");
+        opLine += "void " + tensorFuncName_Functor() + "<" + deviceName + ">::operator()(";
+        arguments.add("const " + deviceName + "& d");
+
+        arguments.add("const DimSize dimSize");
+        for(size_t i = 0; i < tArguments.size(); i++) {
+            arguments.add(tArguments[i]->generateInHeaderParam());
+            arguments.add(tArguments[i]->generateOutHeaderParam());
+        }
+        opLine += arguments.toString();
+        opLine += ") {";
+
+        codeGenerator.addLine(opLine, 1);
+    }
+
+
+    void addFuncImplementationCPU(CodeGenerator& codeGenerator) {
+        addFuncHeader(codeGenerator, DeviceTypeCPU);
+
 
         // Copy In to Out
         for(size_t i = 0; i < tArguments.size(); i++) {
-            text += tArguments[i]->generateCopyInToOutLines();
+            tArguments[i]->addCopyInToOutLines(codeGenerator);
         }
 
-        text += "\tFluidSolver fluidSolver = FluidSolver(Vec3i(dimSize.width, dimSize.height, dimSize.depth));\r\n\r\n";
+        codeGenerator.addLine("FluidSolver fluidSolver = FluidSolver(Vec3i(dimSize.width, dimSize.height, dimSize.depth));");
+        codeGenerator.newLine();
 
-
-        text += "\tfor(int i_b = 0; i_b < dimSize.batches; i_b++) {\r\n";
+        codeGenerator.addLine("for(int i_b = 0; i_b < dimSize.batches; i_b++) {", 1);
 
         // Transform In-types to Tensorflow-types
         for(size_t i = 0; i < tArguments.size(); i++) {
-            text += "\t\t" + tArguments[i]->generateVariableLine("i_b");
+            tArguments[i]->addMantaVariableCreation(codeGenerator, "i_b");
         }
 
-        text += "\r\n";
+        codeGenerator.newLine();
 
         // Func Call
         {
-            text += "\t\t" + mantaFuncName + "(";
+            string opLine = "";
+            StringList arguments;
+
+            opLine += mantaFuncName + "(";
 
             for(size_t i = 0; i < tArguments.size(); i++) {
-                text += tArguments[i]->generateMantaParam();
+                arguments.add(tArguments[i]->generateMantaParam());
             }
-            if(text.size() >= 2) {
-                text = text.substr(0, text.size() - 2);            // Remove last ", "
-            }
+            opLine += arguments.toString();
 
-            text += ");\r\n";
+            opLine += ");";
+
+            codeGenerator.addLine(opLine);
         }
 
-
-        text += "\t}\r\n\r\n";
-
-
-
-
-        text += "}\r\n";
-
-        return text;
+        codeGenerator.addLine("}", -1);
+        codeGenerator.addLine("}", -1);
     }
 
 
-    string generateFuncOP() {
-        string text;
+    void addFuncOP(CodeGenerator& codeGenerator) {
 
-        text += "template <typename Device>\r\n";
-        text += "class " + tensorFuncName_OP() + " : public OpKernel {\r\n";
-        text += "public:\r\n";
-        text += "\texplicit " + tensorFuncName_OP() +"(OpKernelConstruction* context) : OpKernel(context) {}\r\n";
-        text += "\r\n";
-        text += "\tvoid Compute(OpKernelContext* context) override {\r\n";
+        codeGenerator.addLine("template <typename Device>");
+        codeGenerator.addLine("class " + tensorFuncName_OP() + " : public OpKernel {");
+        codeGenerator.addLine("public:", 1);
+        codeGenerator.addLine("explicit " + tensorFuncName_OP() +"(OpKernelConstruction* context) : OpKernel(context) {}");
+        codeGenerator.newLine();
+        codeGenerator.addLine("void Compute(OpKernelContext* context) override {", 1);
 
         // InTensor
         for(size_t i = 0; i < tArguments.size(); i++) {
-            text += tArguments[i]->generateInTensorLines();
+            tArguments[i]->addInTensorLines(codeGenerator);
         }
 
         // OutTensor
         for(size_t i = 0; i < tArguments.size(); i++) {
-            text += tArguments[i]->generateOutTensorLines();
+            tArguments[i]->addOutTensorLines(codeGenerator);
         }
 
 
         // DimSize
-        text += argumentWithHighestDims->generateDimSizeLines();
-        text += "\t\tDimSize dimSize = DimSize(batches, depth, height, width);\r\n";    // TODO might be: batches, width, depth, height
-        text += "\r\n";
+        argumentWithHighestDims->addDimSizeLines(codeGenerator);
+
+        codeGenerator.newLine();
 
         // Function call
         {
-            string funcCall;
-            funcCall += "\t\t" + tensorFuncName_Functor() + "<Device>()(\r\n";
-            funcCall += "\t\t\tcontext->eigen_device<Device>(), \r\n";
-            funcCall += "\t\t\tdimSize, \r\n";
+            string funcCall = "";
+            StringList arguments;
 
-            funcCall += "\t\t\t";
+            funcCall += tensorFuncName_Functor() + "<Device>()(";
+
+            arguments.add("context->eigen_device<Device>()");
+            arguments.add("dimSize");
+
             for(size_t i = 0; i < tArguments.size(); i++) {
-                funcCall += tArguments[i]->generateParam();
+                arguments.add(tArguments[i]->generateInParam());
+                arguments.add(tArguments[i]->generateOutParam());
             }
-            funcCall = funcCall.substr(0, funcCall.size() - 2);            // Remove last ", "
+            funcCall += arguments.toString();
+            funcCall += ");";
 
-            text += funcCall + ");\r\n";
+            codeGenerator.addLine(funcCall);
         }
 
 
-        text += "\t}\r\n";
-        text += "};\r\n";
-
-        return text;
+        codeGenerator.addLine("}", -1);
+        codeGenerator.addLine("};", -1);
     }
 
-    string generateRegisterKernelCPU() {
-        return "REGISTER_KERNEL_BUILDER(Name(\"" + TensorFuncName() + "\").Device(DEVICE_CPU), " + tensorFuncName_OP() + "<CPUDevice>);\r\n";
+    void addRegisterKernelCPU(CodeGenerator& codeGenerator) {
+        codeGenerator.addLine("REGISTER_KERNEL_BUILDER(Name(\"" + TensorFuncName() + "\").Device(DEVICE_CPU), " + tensorFuncName_OP() + "<CPUDevice>);");
     }
 
-    string generateRegisterKernelGPU() {
-        string text;
-
-        text += "#if GOOGLE_CUDA\r\n";
-        text += "\r\n";
-        text += "REGISTER_KERNEL_BUILDER(Name(\"" + TensorFuncName() + "\").Device(DEVICE_GPU), " + tensorFuncName_OP() + "<GPUDevice>);\r\n";
-        text += "\r\n";
-        text += "#endif\r\n";
-
-        return text;
+    void addRegisterKernelGPU(CodeGenerator& codeGenerator) {
+        codeGenerator.addLine("#if GOOGLE_CUDA");
+        codeGenerator.newLine();
+        codeGenerator.addLine("REGISTER_KERNEL_BUILDER(Name(\"" + TensorFuncName() + "\").Device(DEVICE_GPU), " + tensorFuncName_OP() + "<GPUDevice>);");
+        codeGenerator.newLine();
+        codeGenerator.addLine("#endif");
     }
 
 public:
@@ -980,40 +979,40 @@ public:
 
         codeGenerator.newLine();
 
-        codeGenerator.addText(generateIncludesEtc());
+        addIncludesEtc(codeGenerator);
 
         codeGenerator.newLine();
 
-        codeGenerator.addText(generateHeader());
+        addHeader(codeGenerator);
 
         codeGenerator.newLine();
 
-        codeGenerator.addText(generateRegisterOP());
-
-        codeGenerator.newLine();
-        codeGenerator.newLine();
-
-        codeGenerator.addText(generateUsingDefs());
+        addRegisterOP(codeGenerator);
 
         codeGenerator.newLine();
         codeGenerator.newLine();
 
-        codeGenerator.addText(generateFuncImplementationCPU());
+        addUsingDefs(codeGenerator);
 
         codeGenerator.newLine();
         codeGenerator.newLine();
 
-        codeGenerator.addText(generateFuncOP());
+        addFuncImplementationCPU(codeGenerator);
 
         codeGenerator.newLine();
         codeGenerator.newLine();
 
-        codeGenerator.addText(generateRegisterKernelCPU());
+        addFuncOP(codeGenerator);
 
-//        ss << std::endl;
-//        ss << std::endl;
+        codeGenerator.newLine();
+        codeGenerator.newLine();
 
-//        ss << generateRegisterKernelGPU();
+        addRegisterKernelCPU(codeGenerator);
+
+//        codeGenerator.newLine();
+//        codeGenerator.newLine();
+
+//        addRegisterKernelGPU(codeGenerator);
 
         codeGenerator.newLine();
 
