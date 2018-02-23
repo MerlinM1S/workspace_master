@@ -11,6 +11,8 @@ manta_kn_set_wall_bcs = mantatensor_module.kn_set_wall_bcs
 manta_advect_semi_lagrange_mac_grid = mantatensor_module.advect_semi_lagrange_mac_grid
 manta_advect_semi_lagrange_grid_vec3 = mantatensor_module.advect_semi_lagrange_grid_vec3
 manta_advect_semi_lagrange_gridfloat = mantatensor_module.advect_semi_lagrange_gridfloat
+manta_solve_pressure_part1 = mantatensor_module.solve_pressure_part1
+manta_solve_pressure_part2 = mantatensor_module.solve_pressure_part2
 
 class MantaSolver:
     def __init__(self, width, height, depth, batches, dt = 1):
@@ -24,6 +26,7 @@ class MantaSolver:
         self.applyVelocityArray     (np.zeros((batches, width, height, depth, 3), dtype=np.float32))
         self.applyFlagsArray        (np.empty((batches, width, height, depth, 1), dtype=np.int32))
         self.applyDensityArray      (np.zeros((batches, width, height, depth, 1), dtype=np.float32))
+        self.applyPressureArray     (np.zeros((batches, width, height, depth, 1), dtype=np.float32))
         
         self.initFlagsTensor()
         
@@ -67,6 +70,13 @@ class MantaSolver:
     def applyInflow(self, mask, value):
         step = tf.group(self.densityTensor.assign(manta_apply_mask_to_grid_float(self.densityTensor, mask, value, self.flagsTensor)))
         self.sess.run(step)
+
+    def solvePressure(self, cgAccuracy = 1e-3, phi = 0, perCellCorr = 0, fractions = 0, gfClamp = 1e-04, cgMaxIterFac = 1.5, precondition = True, preconditioner = 1, enforceCompatibility = False, useL2Norm = False, zeroPressureFixing = False, curv = 0, surfTens = 0.0):
+        step1 = tf.group(self.pressureTensor.assign(manta_solve_pressure_part1(self.velocityTensor, self.pressureTensor, self.flagsTensor, cgAccuracy, phi, perCellCorr, fractions, gfClamp, cgMaxIterFac, precondition, preconditioner, enforceCompatibility, useL2Norm, zeroPressureFixing, curv, surfTens)))
+        step2 = tf.group(self.velocityTensor.assign(manta_solve_pressure_part2(self.velocityTensor, self.pressureTensor, self.flagsTensor, cgAccuracy, phi, gfClamp, curv, surfTens)))
+        self.sess.run(step1)
+        self.sess.run(step2)
+    
 	
         
     ## Setter
@@ -80,7 +90,10 @@ class MantaSolver:
          
     def applyDensityArray(self, densityArray):
          self.densityTensor = tf.Variable(densityArray)
-    
+
+
+    def applyPressureArray(self, pressureArray):
+         self.pressureTensor = tf.Variable(pressureArray)
     
     ## Getter
     def getVelocityArray(self):

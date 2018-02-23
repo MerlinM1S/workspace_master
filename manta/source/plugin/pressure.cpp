@@ -284,7 +284,7 @@ PYTHON() void releaseMG(FluidSolver* solver=nullptr) {
 //! cgMaxIterFac: heuristic to determine maximal number of CG iteations, increase for more accurate solutions
 //! preconditioner: MIC, or MG (see Preconditioner enum)
 //! useL2Norm: use max norm by default, can be turned to L2 here
-//! zeroPressureFixing: remove null space by fixing a single pressure value, needed for MG 
+//! zeroPressureFixing: remove null space by fixing a single pressure value, needed for MG
 //! curv: curvature for surface tension effects
 //! surfTens: surface tension coefficient
 //! retRhs: return RHS divergence, e.g., for debugging; optional
@@ -295,152 +295,156 @@ PYTHON() void solvePressure(MACGrid& vel, Grid<Real>& pressure, const FlagGrid& 
     Real gfClamp = 1e-04,
     Real cgMaxIterFac = 1.5,
     bool precondition = true, // Deprecated, use preconditioner instead
-	int preconditioner = PcMIC,
-	bool enforceCompatibility = false,
-    bool useL2Norm = false, 
-	bool zeroPressureFixing = false,
-	const Grid<Real> *curv = NULL,
-	const Real surfTens = 0.,
-	Grid<Real>* retRhs = NULL )
+        int preconditioner = PcMIC,
+        bool enforceCompatibility = false,
+    bool useL2Norm = false,
+        bool zeroPressureFixing = false,
+        const Grid<Real> *curv = NULL,
+        const Real surfTens = 0.,
+        Grid<Real>* retRhs = NULL )
 {
-	if (precondition==false) preconditioner = PcNone; // for backwards compatibility
 
-	// reserve temp grids
-	FluidSolver* parent = flags.getParent();
-	Grid<Real> residual(parent);
-	Grid<Real> search(parent);
-	Grid<Real> A0(parent);
-	Grid<Real> Ai(parent);
-	Grid<Real> Aj(parent);
-	Grid<Real> Ak(parent);
-	Grid<Real> tmp(parent);
-	Grid<Real> rhs(parent);
+    cout << "Begin Manta FluidSolver::solvePressure " << pressure.getMax() << endl;
+        if (precondition==false) preconditioner = PcNone; // for backwards compatibility
+
+        // reserve temp grids
+        FluidSolver* parent = flags.getParent();
+        Grid<Real> residual(parent);
+        Grid<Real> search(parent);
+        Grid<Real> A0(parent);
+        Grid<Real> Ai(parent);
+        Grid<Real> Aj(parent);
+        Grid<Real> Ak(parent);
+        Grid<Real> tmp(parent);
+        Grid<Real> rhs(parent);
 		
-	// setup matrix and boundaries 
-	MakeLaplaceMatrix(flags, A0, Ai, Aj, Ak, fractions);
+        // setup matrix and boundaries
+        MakeLaplaceMatrix(flags, A0, Ai, Aj, Ak, fractions);
 
-	if (phi) {
-		ApplyGhostFluidDiagonal(A0, flags, *phi, gfClamp);
-	}
+        if (phi) {
+                ApplyGhostFluidDiagonal(A0, flags, *phi, gfClamp);
+        }
 	
-	// compute divergence and init right hand side
-	MakeRhs kernMakeRhs (flags, rhs, vel, perCellCorr, fractions,  phi, curv, surfTens, gfClamp );
+        // compute divergence and init right hand side
+        MakeRhs kernMakeRhs (flags, rhs, vel, perCellCorr, fractions,  phi, curv, surfTens, gfClamp );
 	
-	if (enforceCompatibility)
-		rhs += (Real)(-kernMakeRhs.sum / (Real)kernMakeRhs.cnt);
+        if (enforceCompatibility)
+                rhs += (Real)(-kernMakeRhs.sum / (Real)kernMakeRhs.cnt);
 	
-	// check whether we need to fix some pressure value...
-	// (manually enable, or automatically for high accuracy, can cause asymmetries otherwise)
-	if(zeroPressureFixing || cgAccuracy<1e-07) 
-	{
-		if(FLOATINGPOINT_PRECISION==1) debMsg("Warning - high CG accuracy with single-precision floating point accuracy might not converge...", 2);
+        // check whether we need to fix some pressure value...
+        // (manually enable, or automatically for high accuracy, can cause asymmetries otherwise)
+        if(zeroPressureFixing || cgAccuracy<1e-07)
+        {
+                if(FLOATINGPOINT_PRECISION==1) debMsg("Warning - high CG accuracy with single-precision floating point accuracy might not converge...", 2);
 
-		int numEmpty = CountEmptyCells(flags);
-		IndexInt fixPidx = -1;
-		if(numEmpty==0) {
-			// Determine appropriate fluid cell for pressure fixing
-			// 1) First check some preferred positions for approx. symmetric zeroPressureFixing
-			Vec3i topCenter(flags.getSizeX() / 2, flags.getSizeY() - 1, flags.is3D() ? flags.getSizeZ() / 2 : 0);
-			Vec3i preferredPos [] = { topCenter, 
-				                      topCenter - Vec3i(0,1,0), 
-				                      topCenter - Vec3i(0,2,0) };
+                int numEmpty = CountEmptyCells(flags);
+                IndexInt fixPidx = -1;
+                if(numEmpty==0) {
+                        // Determine appropriate fluid cell for pressure fixing
+                        // 1) First check some preferred positions for approx. symmetric zeroPressureFixing
+                        Vec3i topCenter(flags.getSizeX() / 2, flags.getSizeY() - 1, flags.is3D() ? flags.getSizeZ() / 2 : 0);
+                        Vec3i preferredPos [] = { topCenter,
+                                                      topCenter - Vec3i(0,1,0),
+                                                      topCenter - Vec3i(0,2,0) };
 			
-			for (Vec3i pos : preferredPos) {
-				if(flags.isFluid(pos)) {
-					fixPidx = flags.index(pos);
-					break;
-				}
-			}
+                        for (Vec3i pos : preferredPos) {
+                                if(flags.isFluid(pos)) {
+                                        fixPidx = flags.index(pos);
+                                        break;
+                                }
+                        }
 
-			// 2) Then search whole domain
-			if (fixPidx == -1) {
-				FOR_IJK_BND(flags,1) {
-					if(flags.isFluid(i,j,k)) {
-						fixPidx = flags.index(i,j,k);
-						// break FOR_IJK_BND loop
-						i = flags.getSizeX()-1; 
-						j = flags.getSizeY()-1;
-						k = __kmax;
-					}
-				}
-			}
-			//debMsg("No empty cells! Fixing pressure of cell "<<fixPidx<<" to zero",1);
-		}
-		if(fixPidx>=0) {
-			fixPressure(fixPidx, Real(0), rhs, A0, Ai, Aj, Ak);
-			static bool msgOnce = false;
-			if(!msgOnce) { debMsg("Pinning pressure of cell "<<fixPidx<<" to zero", 2); msgOnce=true; }
-		}
-	}
+                        // 2) Then search whole domain
+                        if (fixPidx == -1) {
+                                FOR_IJK_BND(flags,1) {
+                                        if(flags.isFluid(i,j,k)) {
+                                                fixPidx = flags.index(i,j,k);
+                                                // break FOR_IJK_BND loop
+                                                i = flags.getSizeX()-1;
+                                                j = flags.getSizeY()-1;
+                                                k = __kmax;
+                                        }
+                                }
+                        }
+                        //debMsg("No empty cells! Fixing pressure of cell "<<fixPidx<<" to zero",1);
+                }
+                if(fixPidx>=0) {
+                        fixPressure(fixPidx, Real(0), rhs, A0, Ai, Aj, Ak);
+                        static bool msgOnce = false;
+                        if(!msgOnce) { debMsg("Pinning pressure of cell "<<fixPidx<<" to zero", 2); msgOnce=true; }
+                }
+        }
 
-	// CG setup
-	// note: the last factor increases the max iterations for 2d, which right now can't use a preconditioner 
-	GridCgInterface *gcg;
-	if (vel.is3D())
-		gcg = new GridCg<ApplyMatrix>  (pressure, rhs, residual, search, flags, tmp, &A0, &Ai, &Aj, &Ak );
-	else
-		gcg = new GridCg<ApplyMatrix2D>(pressure, rhs, residual, search, flags, tmp, &A0, &Ai, &Aj, &Ak );
+        // CG setup
+        // note: the last factor increases the max iterations for 2d, which right now can't use a preconditioner
+        GridCgInterface *gcg;
+        if (vel.is3D())
+                gcg = new GridCg<ApplyMatrix>  (pressure, rhs, residual, search, flags, tmp, &A0, &Ai, &Aj, &Ak );
+        else
+                gcg = new GridCg<ApplyMatrix2D>(pressure, rhs, residual, search, flags, tmp, &A0, &Ai, &Aj, &Ak );
 	
-	gcg->setAccuracy( cgAccuracy ); 
-	gcg->setUseL2Norm( useL2Norm );
+        gcg->setAccuracy( cgAccuracy );
+        gcg->setUseL2Norm( useL2Norm );
 
-	int maxIter = 0;
+        int maxIter = 0;
 	
-	Grid<Real> *pca0 = nullptr, *pca1 = nullptr, *pca2 = nullptr, *pca3 = nullptr;
-	GridMg* pmg = nullptr;
+        Grid<Real> *pca0 = nullptr, *pca1 = nullptr, *pca2 = nullptr, *pca3 = nullptr;
+        GridMg* pmg = nullptr;
 
-	// optional preconditioning	
-	if (preconditioner == PcNone || preconditioner == PcMIC) {			
-		maxIter = (int)(cgMaxIterFac * flags.getSize().max()) * (flags.is3D() ? 1 : 4);
+        // optional preconditioning
+        if (preconditioner == PcNone || preconditioner == PcMIC) {
+                maxIter = (int)(cgMaxIterFac * flags.getSize().max()) * (flags.is3D() ? 1 : 4);
 
-		pca0 = new Grid<Real>(parent);
-		pca1 = new Grid<Real>(parent);
-		pca2 = new Grid<Real>(parent);
-		pca3 = new Grid<Real>(parent);
+                pca0 = new Grid<Real>(parent);
+                pca1 = new Grid<Real>(parent);
+                pca2 = new Grid<Real>(parent);
+                pca3 = new Grid<Real>(parent);
 
-		gcg->setICPreconditioner( preconditioner == PcMIC ? GridCgInterface::PC_mICP : GridCgInterface::PC_None, 
-			pca0, pca1, pca2, pca3);
-	} else if (preconditioner == PcMGDynamic || preconditioner == PcMGStatic) {
-		maxIter = 100;
+                gcg->setICPreconditioner( preconditioner == PcMIC ? GridCgInterface::PC_mICP : GridCgInterface::PC_None,
+                        pca0, pca1, pca2, pca3);
+        } else if (preconditioner == PcMGDynamic || preconditioner == PcMGStatic) {
+                maxIter = 100;
 
-		pmg = gMapMG[parent];
-		if (!pmg) {
-			pmg = new GridMg(pressure.getSize());
-			gMapMG[parent] = pmg;
-		}
+                pmg = gMapMG[parent];
+                if (!pmg) {
+                        pmg = new GridMg(pressure.getSize());
+                        gMapMG[parent] = pmg;
+                }
 
-		gcg->setMGPreconditioner( GridCgInterface::PC_MGP, pmg);
-	}
+                gcg->setMGPreconditioner( GridCgInterface::PC_MGP, pmg);
+        }
 
-	// CG solve
-	for (int iter=0; iter<maxIter; iter++) {
-		if (!gcg->iterate()) iter=maxIter;
-		debMsg("FluidSolver::solvePressure iteration "<<iter<<", residual: "<<gcg->getResNorm(), 9);
-	} 
-	debMsg("FluidSolver::solvePressure iterations:"<<gcg->getIterations()<<", residual:"<<gcg->getResNorm(), 2);
+        cout << "Before Manta FluidSolver::solvePressure " << pressure.getMax() << endl;
+        // CG solve
+        for (int iter=0; iter<maxIter; iter++) {
+                if (!gcg->iterate()) iter=maxIter;
+                debMsg("FluidSolver::solvePressure iteration "<<iter<<", residual: "<<gcg->getResNorm(), 9);
+        }
+        debMsg("FluidSolver::solvePressure iterations:"<<gcg->getIterations()<<", residual:"<<gcg->getResNorm(), 2);
 
-	// Cleanup
-	if (gcg)  delete gcg;
-	if (pca0) delete pca0;
-	if (pca1) delete pca1;
-	if (pca2) delete pca2;
-	if (pca3) delete pca3;
+        cout << "Manta FluidSolver::solvePressure " << pressure.getMax() << endl;
+        // Cleanup
+        if (gcg)  delete gcg;
+        if (pca0) delete pca0;
+        if (pca1) delete pca1;
+        if (pca2) delete pca2;
+        if (pca3) delete pca3;
 
-	// PcMGDynamic: always delete multigrid solver after use
-	// PcMGStatic: keep multigrid solver for next solve
-	if (pmg && preconditioner==PcMGDynamic) releaseMG(parent);
+        // PcMGDynamic: always delete multigrid solver after use
+        // PcMGStatic: keep multigrid solver for next solve
+        if (pmg && preconditioner==PcMGDynamic) releaseMG(parent);
 
-	CorrectVelocity(flags, vel, pressure ); 
-	if (phi) {
-		CorrectVelocityGhostFluid (vel, flags, pressure, *phi, gfClamp,  curv, surfTens );
-		// improve behavior of clamping for large time steps:
-		ReplaceClampedGhostFluidVels (vel, flags, pressure, *phi, gfClamp);
-	}
+        CorrectVelocity(flags, vel, pressure );
+        if (phi) {
+                CorrectVelocityGhostFluid (vel, flags, pressure, *phi, gfClamp,  curv, surfTens );
+                // improve behavior of clamping for large time steps:
+                ReplaceClampedGhostFluidVels (vel, flags, pressure, *phi, gfClamp);
+        }
 
-	// optionally , return RHS
-	if(retRhs) {
-		retRhs->copyFrom( rhs );
-	}
+        // optionally , return RHS
+        if(retRhs) {
+                retRhs->copyFrom( rhs );
+        }
 }
 
 //! Perform pressure projection of the velocity grid

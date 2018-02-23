@@ -1,14 +1,3 @@
-
-
-
-
-
-// DO NOT EDIT !
-// This file is generated using the MantaFlow preprocessor (prep generate).
-
-
-
-
 /******************************************************************************
  *
  * MantaFlow fluid solver framework
@@ -18,16 +7,12 @@
  * GNU General Public License (GPL) 
  * http://www.gnu.org/licenses
  *
- * Globally used macros and functions
+ * Fast marching
  *
  ******************************************************************************/
 
 #ifndef _GENERAL_H
 #define _GENERAL_H
-
-#ifdef MANTATENSOR
-#define Manta MantaTF
-#endif
 
 #include <iostream>
 #include <sstream>
@@ -177,5 +162,3 @@ inline bool c_isnan(float c) {
 } // namespace
 
 #endif
-
-

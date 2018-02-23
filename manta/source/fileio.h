@@ -7,16 +7,12 @@
  * GNU General Public License (GPL) 
  * http://www.gnu.org/licenses
  *
- * Loading and writing grids and meshes to disk
+ * Fast marching
  *
  ******************************************************************************/
 
 #ifndef _FILEIO_H
 #define _FILEIO_H
-
-#ifdef MANTATENSOR
-#define Manta MantaTF
-#endif
 
 #include <string>
 

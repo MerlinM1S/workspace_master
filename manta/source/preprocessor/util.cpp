@@ -72,12 +72,12 @@ Sink::Sink(const string& infile, const string& outfile):
 void Sink::write() {
         writeFile(filename, inplace.str());
 
-        if(gMTType == MTTensor) {
+        if(gMTType == MTTF_CPU) {
             string buildInfoStr = buildInfo.str();
             if(buildInfoStr.length() > 0) {
                 writeFile(filename + ".build", buildInfoStr);
             }
-        } else if (isHeader && !gDocMode) {
+        } else if (gMTType != MTTF_CPU && isHeader && !gDocMode) {
             writeFile(filename + ".reg", link.str());
         }
 }

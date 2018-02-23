@@ -62,7 +62,8 @@ void doGenerate(int argc, char* argv[], bool docs) {
 	gDebugMode = atoi(argv[2]) != 0;
 	if (!strcmp(argv[3],"TBB")) gMTType = MTTBB;
         if (!strcmp(argv[3],"OPENMP")) gMTType = MTOpenMP;
-        if (!strcmp(argv[3],"TENSOR")) gMTType = MTTensor;
+        if (!strcmp(argv[3],"TF_CPU")) gMTType = MTTF_CPU;
+        if (!strcmp(argv[3],"TF_GPU")) gMTType = MTTF_GPU;
 
 	// load complete file into buffer    
 	gFilename = indir+infile;
@@ -82,6 +83,12 @@ void doGenerate(int argc, char* argv[], bool docs) {
 		sink.inplace << "// This file is generated using the MantaFlow preprocessor (prep generate).";
 		sink.inplace << "\n\n\n\n\n";
 	}
+
+        if(gMTType == MTTF_CPU) {
+            sink.inplace << "#define Manta MantaTF_CPU" << endl << endl;
+        } else if(gMTType == MTTF_GPU) {
+            sink.inplace << "#define Manta MantaTF_GPU" << endl << endl;
+        }
 	
         if (isPython) {
                 // python file, only registering
@@ -95,7 +102,7 @@ void doGenerate(int argc, char* argv[], bool docs) {
         } else {
                 if (!gDocMode) {
 			sink.link << "#include \"" + infile + "\"\n";
-                        if (!gDebugMode && gMTType != MTTensor)
+                        if (!gDebugMode && gMTType != MTTF_CPU && gMTType != MTTF_GPU)
 				sink.inplace << "#line 1 \"" << indir << infile << "\"\n";
 		}
 		std::vector<Instantiation> inst;

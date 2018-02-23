@@ -271,21 +271,21 @@ void prox_f(MACGrid& v, FlagGrid &flags, MACGrid& Q, const MACGrid& velC, const 
 // *****************************************************************************
 
 // re-uses main pressure solve from pressure.cpp
-void solvePressure( 
-	MACGrid& vel, Grid<Real>& pressure, FlagGrid& flags, Real cgAccuracy = 1e-3,
-    Grid<Real>* phi = 0, 
-    Grid<Real>* perCellCorr = 0, 
-    MACGrid* fractions = 0,
+void solvePressure(
+        MACGrid& vel, Grid<Real>& pressure, const FlagGrid& flags, Real cgAccuracy = 1e-3,
+    const Grid<Real>* phi = 0,
+    const Grid<Real>* perCellCorr = 0,
+    const MACGrid* fractions = 0,
     Real gfClamp = 1e-04,
     Real cgMaxIterFac = 1.5,
-    bool precondition = true, 
-	int preconditioner = 1,
-	bool enforceCompatibility = false,
-    bool useL2Norm = false, 
-	bool zeroPressureFixing = false,
-	const Grid<Real> *curv = NULL,
-	const Real surfTens = 0.0,
-	Grid<Real>* retRhs = NULL );
+    bool precondition = true,
+        int preconditioner = 1,
+        bool enforceCompatibility = false,
+    bool useL2Norm = false,
+        bool zeroPressureFixing = false,
+        const Grid<Real> *curv = NULL,
+        const Real surfTens = 0.,
+        Grid<Real>* retRhs = NULL );
 
 //! Main function for fluid guiding , includes "regular" pressure solve
 PYTHON() void PD_fluid_guiding(MACGrid& vel, MACGrid& velT,

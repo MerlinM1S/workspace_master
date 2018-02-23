@@ -503,7 +503,11 @@ void processKernel(const Block& block, const string& code, Sink& sink) {
 	string templ = doubleKernel ? TmpDoubleKernel : TmpSingleKernel;
         switch(mtType) {
         case MTNone:
-        case MTTensor:
+        case MTTF_CPU:
+            replaceAll(templ, "$RUN$", TmpRunSimple);
+            break;
+        case MTTF_GPU:
+            // TODO
             replaceAll(templ, "$RUN$", TmpRunSimple);
             break;
         case MTTBB:

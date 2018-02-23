@@ -1,8 +1,10 @@
-#ifndef _DIM_SIZE_H
-#define _DIM_SIZE_H
+namespace mantatensor {
+
+#ifndef _MT_DIM_SIZE_H
+#define _MT_DIM_SIZE_H
  
- class DimSize {
- public: 
+class DimSize {
+public: 
     long batches;
     long width;
     long height;
@@ -53,4 +55,6 @@
     }
  };
 
-#endif // _DIM_SIZE_H
+#endif // _MT_DIM_SIZE_H
+
+} // namespace

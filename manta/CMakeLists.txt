@@ -48,6 +48,9 @@ ELSE()
 	MESSAGE("Build-type: '${CMAKE_BUILD_TYPE}'")
 ENDIF()
 
+
+
+
 # compilation versions
 OPTION(DEBUG "Enable debug compilation" OFF)
 OPTION(GUI "Compile with GUI (requires QT)" OFF)
@@ -72,12 +75,22 @@ OPTION(BUILD_STATIC "Enable building static library" OFF)
 # special option to compile manta without any python, disables python glue code (while trying to keep as much of the rest as possible)
 # this also means: static lib output , instead of executable
 OPTION(NOPYTHON "Compile without python support (limited functionality!)" OFF)
+
+# The following option will generate custom operators files for tensorflow
+OPTION(TENSORFLOW "Compile as tensorflow operator" OFF)
+
+if(TENSORFLOW)
+	SET(GUI FALSE)
+	SET(NOPYTHON TRUE)
+	SET(NUMPY FALSE)
+endif()
+
+
 IF(NOPYTHON)
 	SET(BUILD_STATIC ON)
 ENDIF()
 
-# The following option will generate custom operators files for tensorflow
-OPTION(TENSORFLOW "Compile as tensorflow operator" OFF)
+
 
 # CUDA is deprecated, and not tested - enable at own risk... (needs cmake version >2.8)
 #OPTION(CUDA "Compile with CUDA plugins" OFF)
@@ -133,9 +146,6 @@ MESSAGE(STATUS "Options - "
 MESSAGE(STATUS "Multithreading type : ${MT_TYPE}")
 MESSAGE(STATUS "")
 
-if(TENSORFLOW)
-	SET(GUI FALSE)
-endif()
 
 #******************************************************************************
 # Pre-processor
@@ -152,6 +162,11 @@ SET(SOURCES
 	source/preprocessor/codegen_kernel.cpp
 	source/preprocessor/codegen_tensor.cpp
 	source/preprocessor/fileio.cpp
+
+	source/preprocessor/mantatensor/SimpleBlock.cpp
+	source/preprocessor/mantatensor/TArgument.cpp
+	source/preprocessor/mantatensor/TensorPreprocessorCPU.cpp
+	source/preprocessor/mantatensor/util.cpp
 )
 add_executable(prep ${SOURCES})
 if (NOT WIN32)
@@ -339,7 +354,8 @@ set(TENSOR_INCLUDE
 	source/util/vectorbase.h
 	source/util/vector4d.cpp
 	source/util/vector4d.h
-	source/tensorflow/dim_size.h
+	source/tensorflow/mt_dim_size.h
+	source/tensorflow/mt_util.h
 )
 
 # compile with numpy support?
@@ -536,35 +552,48 @@ IF(TENSORFLOW)
 
 	if(EXISTS "${TENSORFLOW_DIR}/tensorflow/core")
 		set(TENSORFLOW_OUT "${TENSORFLOW_DIR}/tensorflow/core/mantatensor")
-		set(TENSORFLOW_OUT_CPU "${TENSORFLOW_OUT}/MantaCPU")
-	else()
-		MESSAGE(SEND_ERROR "Could not find Tensorflow directory: ${TENSORFLOW_DIR}/tensorflow/core/")
-	endif()
 
-	file(MAKE_DIRECTORY "${TENSORFLOW_OUT_CPU}")
+		set(TF_DEVICES)
+		list(APPEND TF_DEVICES "CPU")
+		list(APPEND TF_DEVICES "GPU")
+
+		set(TENSORFLOW_OUT_CPU "${TENSORFLOW_OUT}/MantaTF_CPU")
+		set(TENSORFLOW_OUT_GPU "${TENSORFLOW_OUT}/MantaTF_GPU")
+	else()
+		MESSAGE(SEND_ERROR "Could not validate Tensorflow directory: ${TENSORFLOW_DIR}/tensorflow/core/")
+	endif()
 
 
 	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/source")
-	FOREACH(it ${PP_SOURCES} ${PP_HEADERS})
-		get_filename_component(CURNAME ${it} NAME)
-		set(CURPP "${TENSORFLOW_OUT_CPU}/${CURNAME}") 
-		string(REPLACE "source/" "" INFILE ${it}) 
 
-		add_custom_command(OUTPUT ${CURPP}
-			   COMMAND "./prep" "generate" ${PP_PREPD} "TENSOR" "${CMAKE_CURRENT_SOURCE_DIR}/source/" "${INFILE}" "${CURPP}"
-			   DEPENDS prep
-			   IMPLICIT_DEPENDS CXX ${it})
-	    list(APPEND PREPPED_SOURCES ${CURPP})
-	ENDFOREACH(it)
+	FOREACH(device ${TF_DEVICES})
 
-	FOREACH(it ${TENSOR_INCLUDE} ${GITINFO})
-		get_filename_component(CURNAME ${it} NAME)
-		set(CURPP "${TENSORFLOW_OUT_CPU}/${CURNAME}") 
-		configure_file(${it} "${CURPP}" COPYONLY)
-	ENDFOREACH(it)
+		set(TENSORFLOW_OUT_LOCAL "${TENSORFLOW_OUT}/MantaTF_${device}")
 
+		file(MAKE_DIRECTORY "${TENSORFLOW_OUT_LOCAL}")
 
-	list(APPEND PREPPED_SOURCES ${GITINFO}) 
+		FOREACH(it ${PP_SOURCES} ${PP_HEADERS} ${TENSOR_INCLUDE})
+			get_filename_component(CURNAME ${it} NAME)
+			set(CURPP "${TENSORFLOW_OUT_LOCAL}/${CURNAME}") 
+			string(REPLACE "source/" "" INFILE ${it}) 
+
+			add_custom_command(OUTPUT ${CURPP}
+				   COMMAND "./prep" "generate" ${PP_PREPD} "TF_${device}" "${CMAKE_CURRENT_SOURCE_DIR}/source/" "${INFILE}" "${CURPP}"
+				   DEPENDS prep
+				   IMPLICIT_DEPENDS CXX ${it})
+
+		    	list(APPEND PREPPED_SOURCES ${CURPP})
+		ENDFOREACH(it)
+
+		FOREACH(it ${GITINFO})
+			get_filename_component(CURNAME ${it} NAME)
+			set(CURPP "${TENSORFLOW_OUT_LOCAL}/${CURNAME}") 
+			configure_file(${it} "${CURPP}" COPYONLY)
+
+		    	list(APPEND PREPPED_SOURCES ${it})
+		ENDFOREACH(it)
+	ENDFOREACH(device)
+
 
 	SET(BUILD_FILE "${TENSORFLOW_OUT}/BUILD")
 	SET(BUILD_LIB "${TENSORFLOW_DIR}/bazel-bin/tensorflow/core/mantatensor/mantatensor.so")

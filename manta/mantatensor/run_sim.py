@@ -35,6 +35,8 @@ height = int(res*1.5)
 depth = res
 random.seed(seed)
 
+loops = 50
+
 imgScale = 6
 
 slice = int(depth/2.0 + 0.5)
@@ -86,7 +88,7 @@ mantaSource = mantaFluidSolver.create(Cylinder, center=vec3(0.5*width, 0.1*heigh
 mantaSource.applyToGrid(grid=mantaDensity, value=1)
 
 
-for t in range(50):
+for t in range(loops):
 	mantaSource.applyToGrid(grid=mantaDensity, value=1)
 		
 	advectSemiLagrange(flags=mantaFlags, vel=mantaVel, grid=mantaDensity, order=1) 
@@ -96,10 +98,12 @@ for t in range(50):
 	setWallBcs(flags=mantaFlags, vel=mantaVel)    
 	addBuoyancy(density=mantaDensity, vel=mantaVel, gravity=vec3(0,-6e-4,0), flags=mantaFlags)
 
-	#solvePressure(flags=mantaFlags, vel=mantaVel, pressure=mantaPressure)
+	#Real cgAccuracy = 1e-3, const Grid<Real>* phi = 0, const Grid<Real>* perCellCorr = 0, const MACGrid* fractions = 0, Real gfClamp = 1e-04, Real cgMaxIterFac = 1.5, bool precondition = true, int preconditioner = PcMIC, bool enforceCompatibility = false, bool useL2Norm = false, bool zeroPressureFixing = false, const Grid<Real> *curv = NULL, const Real surfTens = 0., Grid<Real>* retRhs = NULL
+	solvePressure(flags=mantaFlags, vel=mantaVel, pressure=mantaPressure)
 	
 	#timings.display()    
 	#mantaFluidSolver.step()
+	print ("step: %i" %t)
 
 
 
@@ -110,10 +114,12 @@ mtd.createImageGrid("manta_vel", mantaVel, width, height, depth, slice, scale = 
 
 #mtd.printGrid(mantaVel, width, height, depth)
 
+
+
 solver.applyInflow(source.getMask(), 1.0)
 
 
-for t in range(50):
+for t in range(loops):
     solver.applyInflow(source.getMask(), 1.0)
 
     solver.advectSemiLagrangeDensity()
@@ -121,6 +127,10 @@ for t in range(50):
 
     solver.setWallBcs()
     solver.addBuoyancy([0,-6e-4,0])
+
+    solver.solvePressure()
+
+    print ("step: %i" %t)
 
 
 

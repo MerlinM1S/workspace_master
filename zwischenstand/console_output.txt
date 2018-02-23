@@ -1,0 +1,198 @@
+Scanning dependencies of target prep
+[  1%] Building CXX object CMakeFiles/prep.dir/source/preprocessor/codegen_tensor.cpp.o
+[  2%] Linking CXX executable prep
+[ 16%] Built target prep
+[ 17%] Generating pp/source/gitinfo.h
+[ 19%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/fluidsolver.cpp
+Failure: mantaMsg: std::string is not a valid parameter type.
+Failure: printBuildInfo: Functions may not have a return value.
+Success: setDebugLevel
+Failure: assertNumpy: Functions require at least one argument.
+[ 22%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/general.cpp
+[ 22%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/conjugategrad.cpp
+[ 23%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/multigrid.cpp
+Success: cgSolveDiffusion
+[ 25%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/grid4d.cpp
+Failure: getComp4d: Grid4d<Vec4> is not a valid parameter type.
+Failure: setComp4d: Grid4d<Real> is not a valid parameter type.
+Failure: grid4dMaxDiff: Functions may not have a return value.
+Failure: grid4dMaxDiffInt: Functions may not have a return value.
+Failure: grid4dMaxDiffVec3: Functions may not have a return value.
+Failure: grid4dMaxDiffVec4: Functions may not have a return value.
+Failure: setRegion4d: Grid4d<Real> is not a valid parameter type.
+Failure: setRegion4dVec4: Grid4d<Vec4> is not a valid parameter type.
+Failure: getSliceFrom4d: Grid4d<Real> is not a valid parameter type.
+Failure: getSliceFrom4dVec: Grid4d<Vec4> is not a valid parameter type.
+[ 26%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/levelset.cpp
+Failure: interpolateGrid4d: Grid4d<Real> is not a valid parameter type.
+Failure: interpolateGrid4dVec: Grid4d<Vec4> is not a valid parameter type.
+[ 27%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/grid.cpp
+Failure: gridMaxDiff: Functions may not have a return value.
+Failure: gridMaxDiffInt: Functions may not have a return value.
+Failure: gridMaxDiffVec3: Functions may not have a return value.
+Failure: copyMacToVec3:  Too many non-const parameters.
+Failure: convertMacToVec3:  Too many non-const parameters.
+Failure: resampleVec3ToMac:  Too many non-const parameters.
+Failure: resampleMacToVec3:  Too many non-const parameters.
+Failure: copyLevelsetToReal: LevelsetGrid is not a valid parameter type.
+Failure: copyVec3ToReal:  Too many non-const parameters.
+Failure: copyRealToVec3:  Too many non-const parameters.
+Failure: convertLevelsetToReal: LevelsetGrid is not a valid parameter type.
+[ 29%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/fastmarch.cpp
+Success: swapComponents
+Failure: getUvWeight: Functions may not have a return value.
+Success: resetUvGrid
+Success: updateUvWeight
+Failure: getGridAvg: Functions may not have a return value.
+[ 30%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/shapes.cpp
+[ 32%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/mesh.cpp
+Success: getComponent
+Failure: extrapolateMACSimple:  Too many non-const parameters.
+Success: setComponent
+Failure: extrapolateMACFromWeight:  Too many non-const parameters.
+Success: extrapolateLsSimple
+Failure: extrapolateVec3Simple:  Too many non-const parameters.
+[ 33%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/movingobs.cpp
+[ 35%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/particle.cpp
+[ 38%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/fileio.cpp
+[ 38%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/noisefield.cpp
+Failure: getUniFileSize: Functions may not have a return value.
+Failure: printUniFileInfoString: string is not a valid parameter type.
+Success: quantizeGrid
+Success: quantizeGridVec3
+[ 39%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/kernel.cpp
+[ 41%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/vortexpart.cpp
+[ 42%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/vortexsheet.cpp
+[ 44%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/turbulencepart.cpp
+[ 45%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/timing.cpp
+[ 47%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/edgecollapse.cpp
+[ 48%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/advection.cpp
+Success: resetPhiInObs
+Success: advectSemiLagrange
+[ 50%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/extforces.cpp
+Failure: addGravity:  Too many non-const parameters.
+Failure: addGravityNoScale:  Too many non-const parameters.
+Success: addBuoyancy
+[ 51%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/flip.cpp
+Success: setOpenBound
+Failure: resetOutflow:  Too many non-const parameters.
+Failure: setInflowBcs: string is not a valid parameter type.
+[ 52%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/fire.cpp
+Success: setWallBcs
+Failure: setObstacleVelocity:  Too many non-const parameters.
+Failure: vorticityConfinement:  Too many non-const parameters.
+Failure: addForceField:  Too many non-const parameters.
+Failure: sampleFlagsWithParticles: BasicParticleSystem is not a valid parameter type.
+Failure: sampleLevelsetWithParticles: LevelsetGrid is not a valid parameter type.
+Failure: sampleShapeWithParticles: Shape is not a valid parameter type.
+Failure: markFluidCells: BasicParticleSystem is not a valid parameter type.
+Success: testInitGridWithPos
+Failure: adjustNumber: BasicParticleSystem is not a valid parameter type.
+Failure: debugIntToReal:  Too many non-const parameters.
+[ 54%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/fluidguiding.cpp
+Failure: gridParticleIndex: BasicParticleSystem is not a valid parameter type.
+Failure: unionParticleLevelset: BasicParticleSystem is not a valid parameter type.
+Failure: processBurn:  Too many non-const parameters.
+Failure: updateFlame:  Too many non-const parameters.
+Failure: averagedParticleLevelset: BasicParticleSystem is not a valid parameter type.
+Failure: pushOutofObs: BasicParticleSystem is not a valid parameter type.
+Failure: mapPartsToMAC: BasicParticleSystem is not a valid parameter type.
+Failure: mapPartsToGrid: BasicParticleSystem is not a valid parameter type.
+Failure: mapPartsToGridVec3: BasicParticleSystem is not a valid parameter type.
+Failure: mapGridToParts: BasicParticleSystem is not a valid parameter type.
+Failure: mapGridToPartsVec3: BasicParticleSystem is not a valid parameter type.
+Success: getSpiralVelocity2D
+Failure: mapMACToParts: BasicParticleSystem is not a valid parameter type.
+Success: setGradientYWeight
+Failure: flipVelocityUpdate: BasicParticleSystem is not a valid parameter type.
+Failure: PD_fluid_guiding:  Too many non-const parameters.
+Failure: combineGridVel:  Too many non-const parameters.
+Success: getLaplacian
+[ 55%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/kepsilon.cpp
+[ 57%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/initplugins.cpp
+Failure: KEpsilonComputeProduction:  Too many non-const parameters.
+Failure: KEpsilonSources:  Too many non-const parameters.
+Failure: KEpsilonBcs:  Too many non-const parameters.
+Failure: KEpsilonGradientDiffusion:  Too many non-const parameters.
+[ 58%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/meshplugins.cpp
+Failure: densityInflow: WaveletNoiseField is not a valid parameter type.
+Failure: addNoise: WaveletNoiseField is not a valid parameter type.
+[ 60%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/pressure.cpp
+Failure: setNoisePdata: BasicParticleSystem is not a valid parameter type.
+Failure: setNoisePdataVec3: BasicParticleSystem is not a valid parameter type.
+Failure: setNoisePdataInt: BasicParticleSystem is not a valid parameter type.
+Failure: obstacleGradient: Functions may not have a return value.
+Failure: obstacleLevelset: Functions may not have a return value.
+Failure: applyEmission:  Too many non-const parameters.
+Failure: smoothMesh: Mesh is not a valid parameter type.
+Failure: densityInflowMeshNoise: WaveletNoiseField is not a valid parameter type.
+Failure: subdivideMesh: Mesh is not a valid parameter type.
+Failure: densityInflowMesh: Mesh is not a valid parameter type.
+Failure: killSmallComponents: Mesh is not a valid parameter type.
+Failure: checkSymmetry:  Too many non-const parameters.
+Failure: checkSymmetryVec3:  Too many non-const parameters.
+Failure: projectPpmFull: string is not a valid parameter type.
+Failure: addTestParts: BasicParticleSystem is not a valid parameter type.
+Failure: pdataMaxDiff: Functions may not have a return value.
+Failure: calcCenterOfMass: Functions may not have a return value.
+Success: updateFractions
+Success: setObstacleFlags
+Failure: initVortexVelocity:  Too many non-const parameters.
+Success: releaseMG
+Failure: solvePressure:  Too many non-const parameters.
+Success: solvePressurePart1
+Success: solvePressurePart2
+[ 61%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/surfaceturbulence.cpp
+[ 63%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/vortexplugins.cpp
+Failure: particleSurfaceTurbulence: BasicParticleSystem is not a valid parameter type.
+Failure: debugCheckParts: BasicParticleSystem is not a valid parameter type.
+[ 64%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/waves.cpp
+[ 66%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/waveletturbulence.cpp
+Failure: markAsFixed: Mesh is not a valid parameter type.
+Failure: texcoordInflow: VortexSheetMesh is not a valid parameter type.
+Failure: meshSmokeInflow: VortexSheetMesh is not a valid parameter type.
+Failure: vorticitySource: VortexSheetMesh is not a valid parameter type.
+Failure: smoothVorticity: VortexSheetMesh is not a valid parameter type.
+Failure: VPseedK41: VortexParticleSystem is not a valid parameter type.
+Success: calcSecDeriv2d
+Failure: VICintegration: VortexSheetMesh is not a valid parameter type.
+Failure: totalSum: Functions may not have a return value.
+Failure: densityFromLevelset: LevelsetGrid is not a valid parameter type.
+Success: normalizeSumTo
+Failure: cgSolveWE:  Too many non-const parameters.
+Failure: interpolateGrid:  Too many non-const parameters.
+Failure: interpolateGridVec3:  Too many non-const parameters.
+Failure: interpolateMACGrid:  Too many non-const parameters.
+Failure: applySimpleNoiseVec3: WaveletNoiseField is not a valid parameter type.
+Failure: applySimpleNoiseReal: WaveletNoiseField is not a valid parameter type.
+Failure: applyNoiseVec3: WaveletNoiseField is not a valid parameter type.
+Failure: computeEnergy:  Too many non-const parameters.
+Success: computeWaveletCoeffs
+Failure: computeVorticity:  Too many non-const parameters.
+Failure: computeStrainRateMag:  Too many non-const parameters.
+Failure: extrapolateSimpleFlags:  Too many non-const parameters.
+Failure: getCurl:  Too many non-const parameters.
+[ 67%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/defines.py
+[ 69%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/general.h
+[ 70%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/test.cpp
+[ 72%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/commonkernels.h
+[ 73%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/multigrid.h
+[ 75%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/conjugategrad.h
+[ 76%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/fastmarch.h
+[ 77%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/fluidsolver.h
+[ 79%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/grid.h
+[ 80%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/grid4d.h
+[ 82%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/mesh.h
+[ 83%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/particle.h
+[ 85%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/levelset.h
+[ 86%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/noisefield.h
+[ 88%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/shapes.h
+[ 89%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/vortexsheet.h
+[ 91%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/movingobs.h
+[ 92%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/kernel.h
+[ 94%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/timing.h
+[ 95%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/fileio.h
+[ 97%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/edgecollapse.h
+[ 98%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/vortexpart.h
+[100%] Generating /home/ansorge/tensorflow/tensorflow/core/mantatensor/MantaCPU/turbulencepart.h
+[100%] Built target tensor_prep_run

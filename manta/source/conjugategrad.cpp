@@ -238,7 +238,7 @@ template<class APPLYMAT>
 bool GridCg<APPLYMAT>::iterate() {
 	if(!mInited) doInit();
 
-	mIterations++;
+        mIterations++;
 
 	// create matrix application operator passed as template argument,
 	// this could reinterpret the mpA pointers (not so clean right now)
