@@ -259,7 +259,7 @@ void createTensorBuild(int argc, char* argv[]) {
     buildStream << "tf_custom_op_library(" << endl;
     buildStream << "\tname = \"mantatensor.so\"," << endl;
     buildStream << cpuSourcesStream.str();
-    buildStream << gpuSourcesStream.str();
+//    buildStream << gpuSourcesStream.str();
     buildStream << ")" << endl << endl;
 
     string buildStr = buildStream.str();
