@@ -77,7 +77,7 @@ void Sink::write() {
             if(buildInfoStr.length() > 0) {
                 writeFile(filename + ".build", buildInfoStr);
             }
-        } else if (gMTType != MTTF_CPU && isHeader && !gDocMode) {
+        } else if (gMTType != MTTF_GPU && isHeader && !gDocMode) {
             writeFile(filename + ".reg", link.str());
         }
 }

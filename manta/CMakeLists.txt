@@ -165,7 +165,9 @@ SET(SOURCES
 
 	source/preprocessor/mantatensor/SimpleBlock.cpp
 	source/preprocessor/mantatensor/TArgument.cpp
+	source/preprocessor/mantatensor/TensorPreprocessor.cpp
 	source/preprocessor/mantatensor/TensorPreprocessorCPU.cpp
+	source/preprocessor/mantatensor/TensorPreprocessorGPU.cpp
 	source/preprocessor/mantatensor/util.cpp
 )
 add_executable(prep ${SOURCES})

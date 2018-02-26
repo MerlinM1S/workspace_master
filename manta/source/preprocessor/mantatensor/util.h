@@ -18,7 +18,7 @@ private:
 public:
     void add(std::string text);
 
-    std::string toString();
+    std::string toString() const;
 };
 
 #endif // _P_MT_UTIL_H

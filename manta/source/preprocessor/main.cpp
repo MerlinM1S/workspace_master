@@ -206,6 +206,7 @@ void createTensorBuild(int argc, char* argv[]) {
 
 
     File inCPUDir = File(argv[2]);
+    File inGPUDir = File(argv[3]);
     File libFile =  File(argv[4]);
     File outFileDir =  File(argv[5]);
     File outFileBUILD = outFileDir.changeFilename("BUILD");
@@ -233,12 +234,32 @@ void createTensorBuild(int argc, char* argv[]) {
         cpuSourcesStream << "]," << endl;
     }
 
+    stringstream gpuSourcesStream;
+    {
+        vector<File> inGPUFiles = inGPUDir.getFilesOfDirectory();
+        inGPUFiles.erase(std::remove_if(inGPUFiles.begin(), inGPUFiles.end(), isNotCFile), inGPUFiles.end());
+
+        gpuSourcesStream << "\tgpu_srcs = [";
+
+        for (size_t i = 0; i < inGPUFiles.size(); i++) {
+            File file = inGPUFiles[i];
+
+            gpuSourcesStream << "\"" << file.makeRelative(outFileDir).toString() << "\"";
+
+            if(i + 1 < inGPUFiles.size()) {
+                gpuSourcesStream << ", ";
+            }
+        }
+        gpuSourcesStream << "]," << endl;
+    }
+
     stringstream buildStream;
 
     buildStream << "load(\"//tensorflow:tensorflow.bzl\", \"tf_custom_op_library\")" << endl << endl;
     buildStream << "tf_custom_op_library(" << endl;
     buildStream << "\tname = \"mantatensor.so\"," << endl;
     buildStream << cpuSourcesStream.str();
+    buildStream << gpuSourcesStream.str();
     buildStream << ")" << endl << endl;
 
     string buildStr = buildStream.str();

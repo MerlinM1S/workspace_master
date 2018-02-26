@@ -41,7 +41,7 @@ void StringList::add(string text) {
     }
 }
 
-string StringList::toString() {
+string StringList::toString() const {
     std::string text = "";
     for(size_t i = 0; i < sList.size(); i++) {
         text += sList[i];

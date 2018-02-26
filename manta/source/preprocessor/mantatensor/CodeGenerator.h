@@ -36,7 +36,7 @@ public:
         os << std::endl;
     }
 
-    std::string toString() {
+    std::string toString() const {
         return os.str();
     }
 

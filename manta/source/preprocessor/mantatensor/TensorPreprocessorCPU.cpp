@@ -2,26 +2,8 @@
 
 using namespace std;
 
-string TensorProcessor::getTensorFuncName(NameStyle nameStyle) {
-    switch(nameStyle) {
-    case NS_name_style:
-        return convertToSnake_case(tensorFuncName);
-    case NS_NameStyle: {
-        string result = tensorFuncName;
-        result[0] = toupper(result[0]);
-        return result;
-    }
-    case NS_Functor:
-        return tensorFuncName + "_Functor";
-    case NS_OP:
-        return tensorFuncName + "_OP";
-    default:
-        return tensorFuncName;
-    }
-}
 
-
-void TensorProcessor::addIncludesEtc(CodeGenerator &codeGenerator) {
+void TensorProcessorCPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
     codeGenerator.addLine("#define EIGEN_USE_THREADS");
     codeGenerator.newLine();
     codeGenerator.addLine("#if GOOGLE_CUDA");
@@ -40,33 +22,11 @@ void TensorProcessor::addIncludesEtc(CodeGenerator &codeGenerator) {
     codeGenerator.addLine( "#include \"tensorflow/core/framework/shape_inference.h\"");
     codeGenerator.addLine("#include \"tensorflow/core/framework/op_kernel.h\"");
     codeGenerator.newLine();
-    codeGenerator.addLine("using namespace tensorflow;");
-    codeGenerator.addLine("using namespace Manta;");
-    codeGenerator.addLine("using namespace mantatensor;");
+
+    addUsingNamespaces(codeGenerator);
 }
 
-void TensorProcessor::addHeader(CodeGenerator &codeGenerator) {
-    StringList arguments;
-    string opLine = "";
-
-    codeGenerator.addLine("template <typename Device>");
-    codeGenerator.addLine("struct " + getTensorFuncName(NS_Functor) + " {", 1);
-    opLine += "void operator()(";
-    arguments.add("const Device& d");
-
-    arguments.add("const DimSize dimSize");
-    for(size_t i = 0; i < tArguments.size(); i++) {
-        arguments.add(tArguments[i]->generateInHeaderParam());
-        arguments.add(tArguments[i]->generateOutHeaderParam());
-    }
-    opLine += arguments.toString();
-    opLine += ");";
-
-    codeGenerator.addLine(opLine);
-    codeGenerator.addLine("};", -1);
-}
-
-void TensorProcessor::addRegisterOP(CodeGenerator& codeGenerator) {
+void TensorProcessorCPU::addRegisterOP(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("REGISTER_OP(\"" + getTensorFuncName(NS_NameStyle) + "\")", 1);
 
     for(size_t i = 0; i < tArguments.size(); i++) {
@@ -88,33 +48,17 @@ void TensorProcessor::addRegisterOP(CodeGenerator& codeGenerator) {
     }
 }
 
-void TensorProcessor::addUsingDefs(CodeGenerator& codeGenerator) {
+void TensorProcessorCPU::addUsingDefs(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("using CPUDevice = Eigen::ThreadPoolDevice;");
     codeGenerator.addLine("using GPUDevice = Eigen::GpuDevice;");
 }
 
-
-void TensorProcessor::addFuncHeader(CodeGenerator& codeGenerator) {
-    StringList arguments;
-    string opLine = "";
-
-    codeGenerator.addLine("template <>");
-    opLine += "void " + getTensorFuncName(NS_Functor) + "<CPUDevice>::operator()(";
-    arguments.add("const CPUDevice& d");
-
-    arguments.add("const DimSize dimSize");
-    for(size_t i = 0; i < tArguments.size(); i++) {
-        arguments.add(tArguments[i]->generateInHeaderParam());
-        arguments.add(tArguments[i]->generateOutHeaderParam());
-    }
-    opLine += arguments.toString();
-    opLine += ") {";
-
-    codeGenerator.addLine(opLine, 1);
+string TensorProcessorCPU::getDeviceName() const {
+    return "CPUDevice";
 }
 
 
-void TensorProcessor::addFuncImplementationCPU(CodeGenerator& codeGenerator) {
+void TensorProcessorCPU::addFuncImplementation(CodeGenerator& codeGenerator) const {
     addFuncHeader(codeGenerator);
 
     if(addTimer) {
@@ -192,7 +136,7 @@ void TensorProcessor::addFuncImplementationCPU(CodeGenerator& codeGenerator) {
 }
 
 
-void TensorProcessor::addFuncOP(CodeGenerator& codeGenerator) {
+void TensorProcessorCPU::addFuncOP(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("template <typename Device>");
     codeGenerator.addLine("class " + getTensorFuncName(NS_OP) + " : public OpKernel {");
     codeGenerator.addLine("public:", 1);
@@ -242,11 +186,11 @@ void TensorProcessor::addFuncOP(CodeGenerator& codeGenerator) {
     codeGenerator.addLine("};", -1);
 }
 
-void TensorProcessor::addRegisterKernelCPU(CodeGenerator& codeGenerator) {
+void TensorProcessorCPU::addRegisterKernelCPU(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("REGISTER_KERNEL_BUILDER(Name(\"" + getTensorFuncName(NS_NameStyle) + "\").Device(DEVICE_CPU), " + getTensorFuncName(NS_OP) + "<CPUDevice>);");
 }
 
-void TensorProcessor::addRegisterKernelGPU(CodeGenerator& codeGenerator) {
+void TensorProcessorCPU::addRegisterKernelGPU(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("#if GOOGLE_CUDA");
     codeGenerator.newLine();
     codeGenerator.addLine("REGISTER_KERNEL_BUILDER(Name(\"" + getTensorFuncName(NS_NameStyle) + "\").Device(DEVICE_GPU), " + getTensorFuncName(NS_OP) + "<GPUDevice>);");
@@ -254,84 +198,10 @@ void TensorProcessor::addRegisterKernelGPU(CodeGenerator& codeGenerator) {
     codeGenerator.addLine("#endif");
 }
 
-TensorProcessor::TensorProcessor(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer) : addTimer(_addTimer) {
-    const Block* block = &sBlock.block;
-    tensorFuncName = sBlock.tensorFuncName;
-    mantaFuncName = sBlock.mantaFuncName;
-
-    argumentWithHighestDims = 0;
-    int highestDims = -1;
-
-    errorMsg = "";
-
-    if(block->func.returnType.name.length() == 0) {
-        ignoredMsg = "Constructors can not be converted.";
-        return;
-    }
-
-    if(block->parent) {
-        ignoredMsg = "Methods can not be converted.";
-        return;
-    }
-
-    if(block->func.returnType.name.compare("void") != 0) {
-        errorMsg = "Functions may not have a return value.";
-        return;
-    }
-
-    {
-        int inIndex = 0;
-        int outIndex = 0;
-        for(unsigned int i = 0; i < block->func.arguments.size(); i++) {
-            TArgument* argument = TArgument::create(&(block->func.arguments[i]));
-
-            if(!argument) {
-                errorMsg = block->func.arguments[i].type.toString() + " is not a valid parameter type.";
-                return;
-            }
-
-            argument->applyIndex(inIndex, outIndex);
-
-            tArguments.push_back(argument);
-
-            if(argument->tType.promisedDims > highestDims) {
-                highestDims = argument->tType.promisedDims ;
-                argumentWithHighestDims = argument;
-            }
-        }
-
-        if(outIndex > 1) {
-            errorMsg = "Too many non-const parameters.";
-            return;
-        }
-
-        if(!argumentWithHighestDims || argumentWithHighestDims->tType.promisedDims < 3) {
-            errorMsg = "Functions require at least one parameter of type Grid.";
-            return;
-        }
-
-    }
-
-    filename = sink.getFilename() + "wat";
-}
-
-bool TensorProcessor::canConvert() {
-    return errorMsg.length() == 0 && ignoredMsg.length() == 0;
-}
-
-bool TensorProcessor::threwError() {
-    return errorMsg.length() != 0;
-}
-
-string TensorProcessor::getErrorMsg() {
-    return errorMsg;
-}
-
-
 //    OP_REQUIRES(context, vel_shape.dims() == 5,
 //                 errors::InvalidArgument("AddBuoyancy expects as first parameter a 5-D float velocity array: batches, width, height, depth, dimension"));
 
-string TensorProcessor::generateString() {
+string TensorProcessorCPU::generateString() const {
     CodeGenerator codeGenerator;
 
     codeGenerator.newLine();
@@ -364,7 +234,7 @@ string TensorProcessor::generateString() {
     codeGenerator.newLine();
     codeGenerator.newLine();
 
-    addFuncImplementationCPU(codeGenerator);
+    addFuncImplementation(codeGenerator);
 
     codeGenerator.newLine();
     codeGenerator.newLine();
@@ -396,12 +266,6 @@ string TensorProcessor::generateString() {
     return codeGenerator.toString();
 }
 
-string TensorProcessor::getOpName() {
+string TensorProcessorCPU::getOpName() const {
     return getTensorFuncName(NS_name_style);
-}
-
-TensorProcessor::~TensorProcessor() {
-    for(size_t i = 0; i < tArguments.size(); i++) {
-        delete (tArguments[i]);
-    }
 }
