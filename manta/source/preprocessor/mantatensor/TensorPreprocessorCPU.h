@@ -23,9 +23,8 @@ private:
 public:
     TensorProcessorCPU(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer = false) : TensorProcessor(sBlock, code, sink, _addTimer) { }
 
-    std::string generateString() const;
-
-    std::string getOpName() const;
+    std::string generateOpString() const;
+    std::string generateBuildString() const;
 };
 
 #endif // _P_MT_TENSORPREPROCESSORCPU_H

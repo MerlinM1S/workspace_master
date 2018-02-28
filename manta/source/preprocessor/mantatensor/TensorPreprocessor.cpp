@@ -77,6 +77,7 @@ TensorProcessor::TensorProcessor(const SimpleBlock& sBlock, const std::string& c
     mantaFuncName = sBlock.mantaFuncName;
 
     argumentWithHighestDims = 0;
+    returnArgument = 0;
     int highestDims = -1;
 
     errorMsg = "";
@@ -98,7 +99,6 @@ TensorProcessor::TensorProcessor(const SimpleBlock& sBlock, const std::string& c
 
     {
         int inIndex = 0;
-        int outIndex = 0;
         for(unsigned int i = 0; i < block->func.arguments.size(); i++) {
             TArgument* argument = TArgument::create(&(block->func.arguments[i]));
 
@@ -107,7 +107,21 @@ TensorProcessor::TensorProcessor(const SimpleBlock& sBlock, const std::string& c
                 return;
             }
 
-            argument->applyIndex(inIndex, outIndex);
+
+            // Set Indicies
+            if(!argument->isTypeUnkown()) {
+                argument->inIndex = inIndex;
+                inIndex++;
+
+                if(!argument->isTypeConst()) {
+                    if(returnArgument) {
+                        errorMsg = "Too many non-const parameters.";
+                        return;
+                    } else {
+                        returnArgument = argument;
+                    }
+                }
+            }
 
             tArguments.push_back(argument);
 
@@ -115,11 +129,6 @@ TensorProcessor::TensorProcessor(const SimpleBlock& sBlock, const std::string& c
                 highestDims = argument->tType.promisedDims ;
                 argumentWithHighestDims = argument;
             }
-        }
-
-        if(outIndex > 1) {
-            errorMsg = "Too many non-const parameters.";
-            return;
         }
 
         if(!argumentWithHighestDims || argumentWithHighestDims->tType.promisedDims < 3) {

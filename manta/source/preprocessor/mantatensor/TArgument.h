@@ -3,94 +3,78 @@
 
 #include "TType.h"
 #include "../prep.h"
-#include <map>
 #include <string>
 #include "CodeGenerator.h"
 
 class TArgument {
 public:
-    TTypeOp tType;
+    const TTypeOp tType;
 
     const Argument* argument;
 
     int inIndex;
-    int outIndex;
-
 
 private:
-    TArgument(TTypeOp _tType, const Argument* _argument);
+    TArgument(const TTypeOp _tType, const Argument* _argument);
 
 public:
     static TArgument* create(const Argument* argument) {
-        std::map<std::string, TTypeOp> typeConverter;
-        typeConverter["MACGrid"]    = TTypeOp(TTypeMACGrid);
-        typeConverter["FlagGrid"]   = TTypeOp(TTypeFlagGrid);
-        typeConverter["Grid<float>"]= TTypeOp(TTypeGridFloat);
-        typeConverter["Grid<Real>"] = TTypeOp(TTypeGridFloat);
-        typeConverter["Grid<int>"]  = TTypeOp(TTypeGridInt);
-        typeConverter["Grid<Vec3>"] = TTypeOp(TTypeGridVec3);
-        typeConverter["Grid<bool>"] = TTypeOp(TTypeGridBool);
-        typeConverter["Vec3"]       = TTypeOp(TTypeVec3);
-        typeConverter["Real"]       = TTypeOp(TTypeFloat);
-        typeConverter["float"]      = TTypeOp(TTypeFloat);
-        typeConverter["int"]        = TTypeOp(TTypeInt);
-        typeConverter["bool"]       = TTypeOp(TTypeBool);
+	TTypeOp tType = TTypeOp::create(argument->type.toString());
 
-
-        if (typeConverter.find(argument->type.toString()) != typeConverter.end()) {
-            return new TArgument(typeConverter[argument->type.toString()], argument);
-        } else if (argument->value.length() > 0){
-            return new TArgument(TTypeOp(TTypeUnkown), argument);
-        } else {
-            return NULL;
-        }
+	if(!tType.isUnkown() || argument->value.length() > 0) {
+	    return new TArgument(tType, argument);
+	} else {
+	    return NULL;
+	}
     }
 
-    bool hasDefaultValue();
-    bool isValid();
-    bool isTypeConst();
+    std::string getInputName() const;
+    std::string getOutputName() const;
 
-    void applyIndex(int &_inIndex, int &_outIndex);
+    std::string getInTensorName() const;
+    std::string getOutTensorName() const;
 
-
-    std::string getInputName();
-    std::string getOutputName();
-
-    std::string getInTensorName();
-    std::string getOutTensorName();
-
-    void addDimSizeLines(CodeGenerator& codeGenerator);
-
-    void addInputLine(CodeGenerator& codeGenerator);
-    void addOutputLine(CodeGenerator& codeGenerator);
-
-    void addShapeInferenceLine(CodeGenerator& codeGenerator);
-
-    std::string generateInHeaderParam();
-    std::string generateOutHeaderParam();
-
-    void addInTensorLines(CodeGenerator& codeGenerator);
-    void addOutTensorLines(CodeGenerator& codeGenerator);
+    std::string getMantaName() const;
+    std::string getDefaultValue() const;
 
 
-    std::string generateInParam();
-    std::string generateOutParam();
+    void addDimSizeLines(CodeGenerator& codeGenerator) const;
 
-    std::string generateMantaParam();
+    void addInputLine(CodeGenerator& codeGenerator) const;
+    void addOutputLine(CodeGenerator& codeGenerator) const;
 
-    void addCopyInToOutLines(CodeGenerator& codeGenerator);
+    void addShapeInferenceLine(CodeGenerator& codeGenerator) const;
 
-    void addMantaVariableCreation(CodeGenerator& codeGenerator, std::string batch);
+    std::string generateInHeaderParam() const;
+    std::string generateOutHeaderParam() const;
 
-    void addCleanUp(CodeGenerator& codeGenerator);
+    void addInTensorLines(CodeGenerator& codeGenerator) const;
+    void addOutTensorLines(CodeGenerator& codeGenerator) const;
+
+
+    std::string generateInParam() const;
+    std::string generateOutParam() const;
+
+    std::string generateMantaParam() const;
+
+    void addCopyInToOutLines(CodeGenerator& codeGenerator) const;
+
+    void addMantaVariableCreation(CodeGenerator& codeGenerator, std::string batch) const;
+
+    void addCleanUp(CodeGenerator& codeGenerator) const;
+
+
+    bool hasDefaultValue() const;
+    bool isTypeConst() const;
+    bool isTypeUnkown() const;
 
 
 private:
-    std::string getName();
+    std::string getName() const;
 
-    bool isPointer();
+    bool isPointer() const;
 
-    std::string AddConstCast(std::string arrayPointer, bool constCast);
+    std::string AddConstCast(std::string arrayPointer, bool constCast) const;
 };
 
 #endif // _P_MT_TARGUMENT_H

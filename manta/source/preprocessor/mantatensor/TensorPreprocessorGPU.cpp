@@ -101,7 +101,7 @@ void TensorProcessorGPU::addFuncImplementation(CodeGenerator& codeGenerator) con
 //    OP_REQUIRES(context, vel_shape.dims() == 5,
 //                 errors::InvalidArgument("AddBuoyancy expects as first parameter a 5-D float velocity array: batches, width, height, depth, dimension"));
 
-string TensorProcessorGPU::generateString() const {
+string TensorProcessorGPU::generateOpString() const {
     CodeGenerator codeGenerator;
 
     codeGenerator.newLine();

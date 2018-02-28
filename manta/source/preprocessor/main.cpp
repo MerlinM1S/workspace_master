@@ -19,10 +19,11 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <algorithm>
 
 #include "fileio.h"
 #include "prep.h"
+
+#include "mantatensor/TensorBuild.h"
 
 using namespace std;
 
@@ -154,130 +155,26 @@ void doRegister(int argc, char* argv[]) {
 	output.close();
 }
 
-bool isNotCFile (const File& file) {
-    return file.getExtension().compare("h") && file.getExtension().compare("cpp") ;
-}
-
-bool isNotBuildFile (const File& file) {
-    return file.getExtension().compare("build");
-}
-
-std::vector<std::string> split_string(const std::string& str,
-                                      const std::string& delimiter)
-{
-    std::vector<std::string> strings;
-
-    std::string::size_type pos = 0;
-    std::string::size_type prev = 0;
-    while ((pos = str.find(delimiter, prev)) != std::string::npos)
-    {
-        strings.push_back(str.substr(prev, pos - prev));
-        prev = pos + delimiter.length();
-    }
-
-    // To get the last substring (or only, if delimiter is not found)
-    //strings.push_back(str.substr(prev));
-
-    return strings;
-}
-
-vector<string> getCustomOpsNames(vector<File> inBuildFiles) {
-    inBuildFiles.erase(std::remove_if(inBuildFiles.begin(), inBuildFiles.end(), isNotBuildFile), inBuildFiles.end());
-
-    vector<string> result;
-    for (size_t i = 0; i < inBuildFiles.size(); i++) {
-        File file = inBuildFiles[i];
-
-        string buildFileContent = file.readFile();
-
-        vector<string> strings = split_string(buildFileContent, "\n");
-
-        result.insert( result.end(), strings.begin(), strings.end() );
-    }
-
-    return result;
-}
-
 void createTensorBuild(int argc, char* argv[]) {
     if(argc != 6) {
         usage();
         exit(1);
     }
 
+    string sInCPUDir = argv[2];
+    string sInGPUDir = argv[3];
+    string sLibFile = argv[4];
+    string sOutFileDir = argv[5];
 
-    File inCPUDir = File(argv[2]);
-    File inGPUDir = File(argv[3]);
-    File libFile =  File(argv[4]);
-    File outFileDir =  File(argv[5]);
+    File outFileDir =  File(sOutFileDir);
     File outFileBUILD = outFileDir.changeFilename("BUILD");
     File outFilePy = outFileDir.changeFilename("mantatensor.py");
 
-    vector<File> inCPUFiles = inCPUDir.getFilesOfDirectory();
+    string buildString = generateBuildString(sInCPUDir, sInGPUDir, sOutFileDir);
+    outFileBUILD.writeFile(buildString);
 
-    vector<string> customOpsNames = getCustomOpsNames(inCPUFiles);
-
-    inCPUFiles.erase(std::remove_if(inCPUFiles.begin(), inCPUFiles.end(), isNotCFile), inCPUFiles.end());
-
-    stringstream cpuSourcesStream;
-    {
-        cpuSourcesStream << "\tsrcs = [";
-
-        for (size_t i = 0; i < inCPUFiles.size(); i++) {
-            File file = inCPUFiles[i];
-
-            cpuSourcesStream << "\"" << file.makeRelative(outFileDir).toString() << "\"";
-
-            if(i + 1 < inCPUFiles.size()) {
-                cpuSourcesStream << ", ";
-            }
-        }
-        cpuSourcesStream << "]," << endl;
-    }
-
-    stringstream gpuSourcesStream;
-    {
-        vector<File> inGPUFiles = inGPUDir.getFilesOfDirectory();
-        inGPUFiles.erase(std::remove_if(inGPUFiles.begin(), inGPUFiles.end(), isNotCFile), inGPUFiles.end());
-
-        gpuSourcesStream << "\tgpu_srcs = [";
-
-        for (size_t i = 0; i < inGPUFiles.size(); i++) {
-            File file = inGPUFiles[i];
-
-            gpuSourcesStream << "\"" << file.makeRelative(outFileDir).toString() << "\"";
-
-            if(i + 1 < inGPUFiles.size()) {
-                gpuSourcesStream << ", ";
-            }
-        }
-        gpuSourcesStream << "]," << endl;
-    }
-
-    stringstream buildStream;
-
-    buildStream << "load(\"//tensorflow:tensorflow.bzl\", \"tf_custom_op_library\")" << endl << endl;
-    buildStream << "tf_custom_op_library(" << endl;
-    buildStream << "\tname = \"mantatensor.so\"," << endl;
-    buildStream << cpuSourcesStream.str();
-//    buildStream << gpuSourcesStream.str();
-    buildStream << ")" << endl << endl;
-
-    string buildStr = buildStream.str();
-    outFileBUILD.writeFile(buildStr);
-
-
-
-    stringstream pyStream;
-
-    pyStream << "import tensorflow as tf" << endl << endl;
-    pyStream << "mantatensor_module = tf.load_op_library('" << libFile.toString() << "')" << endl;
-    for(size_t i = 0; i < customOpsNames.size(); i++) {
-        pyStream <<"manta_" << customOpsNames[i] << " = mantatensor_module." << customOpsNames[i] << endl;
-    }
-
-    string pyStr = pyStream.str();
-
-    outFilePy.writeFile(pyStr);
+    string pythonString = generatePythonString(sInCPUDir, sLibFile);
+    outFilePy.writeFile(pythonString);
 }
 
 

@@ -17,7 +17,7 @@ private:
 public:
     TensorProcessorGPU(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer = false) : TensorProcessor(sBlock, code, sink, _addTimer) { }
 
-    std::string generateString() const;
+    std::string generateOpString() const;
 };
 
 #endif // _P_MT_TENSORPREPROCESSORGPU_H

@@ -165,6 +165,7 @@ SET(SOURCES
 
 	source/preprocessor/mantatensor/SimpleBlock.cpp
 	source/preprocessor/mantatensor/TArgument.cpp
+	source/preprocessor/mantatensor/TensorBuild.cpp
 	source/preprocessor/mantatensor/TensorPreprocessor.cpp
 	source/preprocessor/mantatensor/TensorPreprocessorCPU.cpp
 	source/preprocessor/mantatensor/TensorPreprocessorGPU.cpp

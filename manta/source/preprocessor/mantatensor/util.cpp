@@ -34,6 +34,21 @@ string convertToSnake_case(string camelCase) {
     return str;
 }
 
+vector<string> splitString(const string& str, char delim) {
+    vector<string> cont;
+
+    size_t current, previous = 0;
+    current = str.find(delim);
+    while (current != string::npos) {
+        cont.push_back(str.substr(previous, current - previous));
+        previous = current + 1;
+        current = str.find(delim, previous);
+    }
+    cont.push_back(str.substr(previous, current - previous));
+
+    return cont;
+}
+
 
 void StringList::add(string text) {
     if(text.length() > 0) {

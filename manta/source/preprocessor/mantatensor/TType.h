@@ -2,6 +2,7 @@
 #define _P_MT_TTYPE_H
 
 #include <string>
+#include <map>
 
 enum TType {
     TTypeUnkown, TTypeMACGrid, TTypeFlagGrid, TTypeGridFloat, TTypeGridInt, TTypeGridVec3, TTypeGridBool, TTypeVec3, TTypeFloat, TTypeInt, TTypeBool
@@ -19,28 +20,32 @@ public:
 
     TType tType;
 
+    static TTypeOp create(std::string sType) {
+        std::map<std::string, TTypeOp> typeConverter;
+        typeConverter["MACGrid"]    = TTypeOp(TTypeMACGrid);
+        typeConverter["FlagGrid"]   = TTypeOp(TTypeFlagGrid);
+        typeConverter["Grid<float>"]= TTypeOp(TTypeGridFloat);
+        typeConverter["Grid<Real>"] = TTypeOp(TTypeGridFloat);
+        typeConverter["Grid<int>"]  = TTypeOp(TTypeGridInt);
+        typeConverter["Grid<Vec3>"] = TTypeOp(TTypeGridVec3);
+        typeConverter["Grid<bool>"] = TTypeOp(TTypeGridBool);
+        typeConverter["Vec3"]       = TTypeOp(TTypeVec3);
+        typeConverter["Real"]       = TTypeOp(TTypeFloat);
+        typeConverter["float"]      = TTypeOp(TTypeFloat);
+        typeConverter["int"]        = TTypeOp(TTypeInt);
+        typeConverter["bool"]       = TTypeOp(TTypeBool);
 
-    bool isScalar() {
-        return promisedDims == 0;
-    }
 
-    bool isGrid() {
-        switch(tType) {
-        case TTypeMACGrid:
-        case TTypeGridVec3:
-        case TTypeFlagGrid:
-        case TTypeGridFloat:
-        case TTypeGridBool:
-        case TTypeGridInt:
-            return true;
-        default:
-            return false;
+        if (typeConverter.find(sType) != typeConverter.end()) {
+            return TTypeOp(typeConverter[sType]);
+        } else {
+            return TTypeOp(TTypeUnkown);
         }
     }
 
     TTypeOp() {}
 
-    TTypeOp(TType _tType) : tType(_tType) {
+    TTypeOp(const TType _tType) : tType(_tType) {
         switch(tType) {
         case TTypeUnkown:
             promisedDims = 0;
@@ -122,13 +127,26 @@ public:
             pName += "*";
     }
 
-    TTypeOp(std::string _cName, std::string _name, std::string _hName, bool _isConst, int _promisedDims) : cName(_cName), name(_name), hName(_hName), isConst(_isConst), promisedDims(_promisedDims) {
-        pName = name;
-        if(!isScalar())
-            pName += "*";
+
+    bool isScalar() const {
+        return promisedDims == 0;
     }
 
-    bool isUnkown() {
+    bool isGrid() const {
+        switch(tType) {
+        case TTypeMACGrid:
+        case TTypeGridVec3:
+        case TTypeFlagGrid:
+        case TTypeGridFloat:
+        case TTypeGridBool:
+        case TTypeGridInt:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    bool isUnkown() const {
         return tType == TTypeUnkown;
     }
 };

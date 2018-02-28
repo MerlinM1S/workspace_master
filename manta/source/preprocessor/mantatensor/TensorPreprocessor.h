@@ -20,6 +20,7 @@ protected:
     List<TArgument*> tArguments;
 
     TArgument* argumentWithHighestDims;
+    TArgument* returnArgument;
 
     bool addTimer;
 
@@ -40,7 +41,7 @@ public:
 
     virtual ~TensorProcessor();
 
-    virtual std::string generateString() const = 0;
+    virtual std::string generateOpString() const = 0;
 
     bool canConvert() const;
     bool threwError() const;

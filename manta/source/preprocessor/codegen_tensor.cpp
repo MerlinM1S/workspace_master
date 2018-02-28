@@ -23,8 +23,8 @@ void processTensorFunctionCPU(const Block& block, const string& code, Sink& sink
             return;
         }
 
-        sink.buildInfo << tensorProcessor.getOpName() << endl;
-        sink.inplace << tensorProcessor.generateString();
+        sink.buildInfo << tensorProcessor.generateBuildString();
+        sink.inplace << tensorProcessor.generateOpString();
     }
 
     cout << "Success: " << block.func.name << endl;
@@ -41,7 +41,7 @@ void processTensorFunctionGPU(const Block& block, const string& code, Sink& sink
             return;
         }
 
-        sink.inplace << tensorProcessor.generateString();
+        sink.inplace << tensorProcessor.generateOpString();
     }
 }
 

@@ -1,53 +1,45 @@
 #include "TArgument.h"
-#include <string>
 #include "util.h"
 
-TArgument::TArgument(TTypeOp _tType, const Argument* _argument) : tType(_tType), argument(_argument), inIndex(-1), outIndex(-1) {  }
+TArgument::TArgument(TTypeOp _tType, const Argument* _argument) : tType(_tType), argument(_argument), inIndex(-1) {  }
 
-bool TArgument::hasDefaultValue() {
+bool TArgument::hasDefaultValue() const {
     return argument->value.length() > 0;
 }
 
-
-bool TArgument::isValid() {
-    return tType.name.length() > 0;
-}
-
-void TArgument::applyIndex(int &_inIndex, int &_outIndex) {
-    if(tType.isUnkown()) {
-        return;
-    }
-
-    inIndex = _inIndex;
-    _inIndex++;
-
-    if(!isTypeConst()) {
-        outIndex = _outIndex;
-        _outIndex++;
-    }
-}
-
-bool TArgument::isTypeConst() {
+bool TArgument::isTypeConst() const {
     return argument->type.isConst || tType.isConst;
 }
 
-string TArgument::getInputName() {
+bool TArgument::isTypeUnkown() const {
+    return tType.isUnkown();
+}
+
+string TArgument::getInputName() const {
     return "in_" + convertToSnake_case(argument->name);
 }
 
-string TArgument::getOutputName() {
+string TArgument::getOutputName() const {
     return "out_" + convertToSnake_case(argument->name);
 }
 
-string TArgument::TArgument::getInTensorName() {
+string TArgument::TArgument::getInTensorName() const {
     return getInputName() + "_tensor";
 }
 
-string TArgument::getOutTensorName() {
+string TArgument::getOutTensorName() const {
     return getOutputName() + "_tensor";
 }
 
-void TArgument::addDimSizeLines(CodeGenerator& codeGenerator) {
+string TArgument::getMantaName() const {
+    return argument->name;
+}
+
+string TArgument::getDefaultValue() const {
+    return argument->value;
+}
+
+void TArgument::addDimSizeLines(CodeGenerator& codeGenerator) const {
     string dimNames[4] = {"batches", "depth", "height", "width"};
 
 
@@ -67,39 +59,39 @@ void TArgument::addDimSizeLines(CodeGenerator& codeGenerator) {
     codeGenerator.addLine("DimSize dimSize = DimSize(batches, depth, height, width);");    // TODO might be: batches, width, depth, height
 }
 
-void TArgument::addInputLine(CodeGenerator& codeGenerator) {
+void TArgument::addInputLine(CodeGenerator& codeGenerator) const {
     if(inIndex >= 0) {
         codeGenerator.addLine(".Input(\"" + getInputName() + ": " + tType.hName + "\")");
     }
 }
 
-void TArgument::addOutputLine(CodeGenerator& codeGenerator) {
-    if(outIndex >= 0) {
+void TArgument::addOutputLine(CodeGenerator& codeGenerator) const {
+    if(!isTypeConst()) {
         codeGenerator.addLine(".Output(\"" + getOutputName() + ": " + tType.hName + "\")");
     }
 }
 
-void TArgument::addShapeInferenceLine(CodeGenerator& codeGenerator) {
-    if(outIndex >= 0 && inIndex >= 0) {
-        codeGenerator.addLine("c->set_output(" + SSTR(outIndex) + ", c->input(" + SSTR(inIndex) + "));");
+void TArgument::addShapeInferenceLine(CodeGenerator& codeGenerator) const {
+    if(!isTypeConst() && inIndex >= 0) {
+        codeGenerator.addLine("c->set_output(0, c->input(" + SSTR(inIndex) + "));");
     }
 }
 
-string TArgument::generateInHeaderParam() {
+string TArgument::generateInHeaderParam() const {
     if(inIndex < 0)
         return "";
     else
         return "const " + tType.pName + " " + getInputName();
 }
 
-string TArgument::generateOutHeaderParam() {
-    if(outIndex < 0)
+string TArgument::generateOutHeaderParam() const {
+    if(isTypeConst())
         return "";
     else
         return tType.pName + " " + getOutputName();
 }
 
-void TArgument::addInTensorLines(CodeGenerator& codeGenerator) {
+void TArgument::addInTensorLines(CodeGenerator& codeGenerator) const {
     if(inIndex < 0) {
         return;
     }
@@ -122,34 +114,34 @@ void TArgument::addInTensorLines(CodeGenerator& codeGenerator) {
     codeGenerator.newLine();
 }
 
-void TArgument::addOutTensorLines(CodeGenerator& codeGenerator) {
-    if(outIndex < 0) {
+void TArgument::addOutTensorLines(CodeGenerator& codeGenerator) const {
+    if(isTypeConst()) {
         return;
     }
 
     codeGenerator.addLine("Tensor* " + getOutTensorName() + " = NULL;");
-    codeGenerator.addLine("OP_REQUIRES_OK(context, context->allocate_output(" + SSTR(outIndex) + ", " + getInTensorName() + ".shape(), &" + getOutTensorName() + "));");
+    codeGenerator.addLine("OP_REQUIRES_OK(context, context->allocate_output(0, " + getInTensorName() + ".shape(), &" + getOutTensorName() + "));");
     codeGenerator.addLine(tType.pName + " " + getOutputName() + " = " + getOutTensorName() + "->flat<" + tType.name + ">().data();");
 
     codeGenerator.newLine();
 }
 
 
-string TArgument::generateInParam() {
+string TArgument::generateInParam() const {
     if(inIndex < 0)
         return "";
     else
         return getInputName();
 }
 
-string TArgument::generateOutParam() {
-    if(outIndex < 0)
+string TArgument::generateOutParam() const {
+    if(isTypeConst())
         return "";
     else
         return getOutputName();
 }
 
-string TArgument::generateMantaParam() {
+string TArgument::generateMantaParam() const {
     if(tType.isUnkown()) {
         return argument->value;
     } else {
@@ -157,8 +149,8 @@ string TArgument::generateMantaParam() {
     }
 }
 
-void TArgument::addCopyInToOutLines(CodeGenerator& codeGenerator) {
-    if(outIndex >= 0 && inIndex >= 0) {
+void TArgument::addCopyInToOutLines(CodeGenerator& codeGenerator) const {
+    if(!isTypeConst() && inIndex >= 0) {
         codeGenerator.addLine("for(int i = 0; i < dimSize.lengthOf(" + SSTR(tType.promisedDims) + "); i++) {", 1);
         codeGenerator.addLine(getOutputName() + "[i] = " + getInputName() + "[i];");
         codeGenerator.addLine("}", -1);
@@ -166,20 +158,18 @@ void TArgument::addCopyInToOutLines(CodeGenerator& codeGenerator) {
     }
 }
 
-void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string batch) {
+void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string batch) const {
     if(tType.isUnkown())
         return;
 
     string baseVariableName;
-    if(outIndex >= 0) {
+    if(!isTypeConst()) {
         baseVariableName = getOutputName();
     } else if (inIndex >= 0){
         baseVariableName = getInputName();
     } else {
         return;
     }
-
-    bool constCast = outIndex < 0;
 
     string makeCode;
 
@@ -188,11 +178,11 @@ void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string ba
     case TTypeGridFloat:
     case TTypeGridBool:
     case TTypeFlagGrid:
-        makeCode = tType.cName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) + ", true);";
+        makeCode = tType.cName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", isTypeConst()) + ", true);";
         break;
     case TTypeGridVec3:
     case TTypeMACGrid:
-         makeCode = tType.cName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", constCast) +  "), true);";
+         makeCode = tType.cName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", isTypeConst()) +  "), true);";
         break;
     case TTypeVec3:
         makeCode = "Vec3(" +  baseVariableName + " + (3 * " + batch + "));";
@@ -216,22 +206,22 @@ void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string ba
     }
 }
 
-void TArgument::addCleanUp(CodeGenerator& codeGenerator) {
+void TArgument::addCleanUp(CodeGenerator& codeGenerator) const {
     if(isPointer()) {
         codeGenerator.addLine("delete " + getName() + ";");
     }
 }
 
 
-string TArgument::getName() {
+string TArgument::getName() const {
     return argument->name;
 }
 
-bool TArgument::isPointer() {
+bool TArgument::isPointer() const {
     return argument->type.isPointer;
 }
 
-string TArgument::AddConstCast(string arrayPointer, bool constCast) {
+string TArgument::AddConstCast(string arrayPointer, bool constCast) const {
     if(constCast) {
         return "const_cast<" + tType.pName + ">(" +  arrayPointer + ")";
     } else {

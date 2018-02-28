@@ -1,4 +1,5 @@
 #include "TensorPreprocessorCPU.h"
+#include "TensorOp.h"
 
 using namespace std;
 
@@ -201,7 +202,7 @@ void TensorProcessorCPU::addRegisterKernelGPU(CodeGenerator& codeGenerator) cons
 //    OP_REQUIRES(context, vel_shape.dims() == 5,
 //                 errors::InvalidArgument("AddBuoyancy expects as first parameter a 5-D float velocity array: batches, width, height, depth, dimension"));
 
-string TensorProcessorCPU::generateString() const {
+string TensorProcessorCPU::generateOpString() const {
     CodeGenerator codeGenerator;
 
     codeGenerator.newLine();
@@ -266,6 +267,12 @@ string TensorProcessorCPU::generateString() const {
     return codeGenerator.toString();
 }
 
-string TensorProcessorCPU::getOpName() const {
-    return getTensorFuncName(NS_name_style);
+string TensorProcessorCPU::generateBuildString() const {
+    TensorOp tensorOp(getTensorFuncName(NS_name_style));
+    tensorOp.setReturnType(returnArgument->getMantaName());
+    for(size_t i = 0; i < tArguments.size(); i++) {
+        tensorOp.addParameter(tArguments[i]->getMantaName(), tArguments[i]->getDefaultValue());
+    }
+
+    return tensorOp.toString() + "\n";
 }
