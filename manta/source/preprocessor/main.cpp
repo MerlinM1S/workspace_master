@@ -23,7 +23,7 @@
 #include "fileio.h"
 #include "prep.h"
 
-#include "mantatensor/TensorBuild.h"
+#include "mantatensor/tensor_build.h"
 
 using namespace std;
 
@@ -90,6 +90,12 @@ void doGenerate(int argc, char* argv[], bool docs) {
         } else if(gMTType == MTTF_GPU) {
             sink.inplace << "#define Manta MantaTF_GPU" << endl << endl;
         }
+
+        if(isGeneratingMT()) {
+            sink.mtCustomOps << endl << endl;
+            sink.mtCustomOps << "// -------------------------- TENSORFLOW OPS ------------------------- ";
+            sink.mtCustomOps << endl << endl;
+        }
 	
         if (isPython) {
                 // python file, only registering
@@ -103,7 +109,7 @@ void doGenerate(int argc, char* argv[], bool docs) {
         } else {
                 if (!gDocMode) {
 			sink.link << "#include \"" + infile + "\"\n";
-                        if (!gDebugMode && gMTType != MTTF_CPU && gMTType != MTTF_GPU)
+                        if (!gDebugMode && !isGeneratingMT())
 				sink.inplace << "#line 1 \"" << indir << infile << "\"\n";
 		}
 		std::vector<Instantiation> inst;

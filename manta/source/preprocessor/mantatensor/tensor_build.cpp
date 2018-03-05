@@ -1,10 +1,10 @@
-#include "TensorBuild.h"
+#include "tensor_build.h"
 #include "util.h"
 #include <vector>
 #include <algorithm>
 #include <sstream>
 #include "../fileio.h"
-#include "TensorOp.h"
+#include "tensor_op.h"
 
 using namespace std;
 

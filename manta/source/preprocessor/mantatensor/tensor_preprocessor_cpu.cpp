@@ -1,10 +1,11 @@
-#include "TensorPreprocessorCPU.h"
-#include "TensorOp.h"
+#include "tensor_preprocessor_cpu.h"
+#include "tensor_op.h"
+#include "util.h"
 
 using namespace std;
 
 
-void TensorProcessorCPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
+void TensorPreprocessorCPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
     codeGenerator.addLine("#define EIGEN_USE_THREADS");
     codeGenerator.newLine();
     codeGenerator.addLine("#if GOOGLE_CUDA");
@@ -27,7 +28,7 @@ void TensorProcessorCPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
     addUsingNamespaces(codeGenerator);
 }
 
-void TensorProcessorCPU::addRegisterOP(CodeGenerator& codeGenerator) const {
+void TensorPreprocessorCPU::addRegisterOP(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("REGISTER_OP(\"" + getTensorFuncName(NS_NameStyle) + "\")", 1);
 
     for(size_t i = 0; i < tArguments.size(); i++) {
@@ -49,17 +50,17 @@ void TensorProcessorCPU::addRegisterOP(CodeGenerator& codeGenerator) const {
     }
 }
 
-void TensorProcessorCPU::addUsingDefs(CodeGenerator& codeGenerator) const {
+void TensorPreprocessorCPU::addUsingDefs(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("using CPUDevice = Eigen::ThreadPoolDevice;");
     codeGenerator.addLine("using GPUDevice = Eigen::GpuDevice;");
 }
 
-string TensorProcessorCPU::getDeviceName() const {
+string TensorPreprocessorCPU::getDeviceName() const {
     return "CPUDevice";
 }
 
 
-void TensorProcessorCPU::addFuncImplementation(CodeGenerator& codeGenerator) const {
+void TensorPreprocessorCPU::addFuncImplementation(CodeGenerator& codeGenerator) const {
     addFuncHeader(codeGenerator);
 
     if(addTimer) {
@@ -137,7 +138,7 @@ void TensorProcessorCPU::addFuncImplementation(CodeGenerator& codeGenerator) con
 }
 
 
-void TensorProcessorCPU::addFuncOP(CodeGenerator& codeGenerator) const {
+void TensorPreprocessorCPU::addFuncOP(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("template <typename Device>");
     codeGenerator.addLine("class " + getTensorFuncName(NS_OP) + " : public OpKernel {");
     codeGenerator.addLine("public:", 1);
@@ -187,11 +188,11 @@ void TensorProcessorCPU::addFuncOP(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("};", -1);
 }
 
-void TensorProcessorCPU::addRegisterKernelCPU(CodeGenerator& codeGenerator) const {
+void TensorPreprocessorCPU::addRegisterKernelCPU(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("REGISTER_KERNEL_BUILDER(Name(\"" + getTensorFuncName(NS_NameStyle) + "\").Device(DEVICE_CPU), " + getTensorFuncName(NS_OP) + "<CPUDevice>);");
 }
 
-void TensorProcessorCPU::addRegisterKernelGPU(CodeGenerator& codeGenerator) const {
+void TensorPreprocessorCPU::addRegisterKernelGPU(CodeGenerator& codeGenerator) const {
     codeGenerator.addLine("#if GOOGLE_CUDA");
     codeGenerator.newLine();
     codeGenerator.addLine("REGISTER_KERNEL_BUILDER(Name(\"" + getTensorFuncName(NS_NameStyle) + "\").Device(DEVICE_GPU), " + getTensorFuncName(NS_OP) + "<GPUDevice>);");
@@ -202,18 +203,13 @@ void TensorProcessorCPU::addRegisterKernelGPU(CodeGenerator& codeGenerator) cons
 //    OP_REQUIRES(context, vel_shape.dims() == 5,
 //                 errors::InvalidArgument("AddBuoyancy expects as first parameter a 5-D float velocity array: batches, width, height, depth, dimension"));
 
-string TensorProcessorCPU::generateOpString() const {
+string TensorPreprocessorCPU::generateOpString() const {
     CodeGenerator codeGenerator;
 
     codeGenerator.newLine();
     codeGenerator.newLine();
 
-    codeGenerator.addLine("} // namespace");
-
-    codeGenerator.newLine();
-    codeGenerator.newLine();
-
-    codeGenerator.addLine("// -------------------------- TENSORFLOW OP ------------------------- ");
+    codeGenerator.addLine("// -------------------------- " + getTensorFuncName(NS_NameStyle) + "-------------------------");
 
     codeGenerator.newLine();
 
@@ -252,22 +248,12 @@ string TensorProcessorCPU::generateOpString() const {
 
 //        addRegisterKernelGPU(codeGenerator);
 
-    codeGenerator.newLine();
-
-
-    codeGenerator.addLine("// ------------------------------------------------------------------ ");
-
-    codeGenerator.newLine();
-    codeGenerator.newLine();
-
-
-    codeGenerator.addLine("namespace Manta {");
 
 
     return codeGenerator.toString();
 }
 
-string TensorProcessorCPU::generateBuildString() const {
+string TensorPreprocessorCPU::generateBuildString() const {
     TensorOp tensorOp(getTensorFuncName(NS_name_style));
     tensorOp.setReturnType(returnArgument->getMantaName());
     for(size_t i = 0; i < tArguments.size(); i++) {

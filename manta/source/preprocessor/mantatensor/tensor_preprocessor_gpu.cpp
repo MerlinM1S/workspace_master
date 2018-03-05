@@ -1,9 +1,10 @@
-#include "TensorPreprocessorGPU.h"
+#include "tensor_preprocessor_gpu.h"
+#include "util.h"
 
 using namespace std;
 
 
-void TensorProcessorGPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
+void TensorPreprocessorGPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
     codeGenerator.addLine("#include \"mt_dim_size.h\"");
     codeGenerator.addLine("#include \"mt_util.h\"");
     codeGenerator.newLine();
@@ -17,11 +18,11 @@ void TensorProcessorGPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
 }
 
 
-string TensorProcessorGPU::getDeviceName() const {
+string TensorPreprocessorGPU::getDeviceName() const {
     return "GPUDevice";
 }
 
-void TensorProcessorGPU::addFuncImplementation(CodeGenerator& codeGenerator) const {
+void TensorPreprocessorGPU::addFuncImplementation(CodeGenerator& codeGenerator) const {
     addFuncHeader(codeGenerator);
 
     if(addTimer) {
@@ -101,18 +102,13 @@ void TensorProcessorGPU::addFuncImplementation(CodeGenerator& codeGenerator) con
 //    OP_REQUIRES(context, vel_shape.dims() == 5,
 //                 errors::InvalidArgument("AddBuoyancy expects as first parameter a 5-D float velocity array: batches, width, height, depth, dimension"));
 
-string TensorProcessorGPU::generateOpString() const {
+string TensorPreprocessorGPU::generateOpString() const {
     CodeGenerator codeGenerator;
 
     codeGenerator.newLine();
     codeGenerator.newLine();
 
-    codeGenerator.addLine("} // namespace");
-
-    codeGenerator.newLine();
-    codeGenerator.newLine();
-
-    codeGenerator.addLine("// -------------------------- TENSORFLOW OP ------------------------- ");
+    codeGenerator.addLine("// -------------------------- " + getTensorFuncName(NS_NameStyle) + "-------------------------");
 
     codeGenerator.newLine();
 
@@ -140,17 +136,6 @@ string TensorProcessorGPU::generateOpString() const {
     codeGenerator.newLine();
 
     codeGenerator.addLine("#endif  // GOOGLE_CUDA");
-
-    codeGenerator.newLine();
-
-
-    codeGenerator.addLine("// ------------------------------------------------------------------ ");
-
-    codeGenerator.newLine();
-    codeGenerator.newLine();
-
-
-    codeGenerator.addLine("namespace Manta {");
 
 
     return codeGenerator.toString();

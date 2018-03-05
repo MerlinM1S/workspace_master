@@ -50,9 +50,11 @@ void processPythonInstantiation(const Block& block, const Type& aliasType, Sink&
 void processPythonAlias(const Block& block, const Type& aliasType, const std::string& aliasName, Sink& sink);
 void postProcessInstantiations(Sink& sink, std::vector<Instantiation>& inst);
 
-void processTensorFunction(const Block& block, const string& code, Sink& sink);
+void processFunctionMantatensor(const Block& block, const string& code, Sink& sink);
 
-
+inline bool isGeneratingMT() {
+	return gMTType == MTTF_CPU || gMTType == MTTF_GPU;
+}
 
 inline const string ToString(BlockType blockType)
 {

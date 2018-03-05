@@ -2,8 +2,83 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include "util.h"
 
-#include "SimpleBlock.h"
+#include "simple_block.h"
+
+using namespace std;
+
+
+
+SimpleBlock::SimpleBlock(Block _block) : block(_block) {
+    mantaFuncName = block.func.name;
+    if(block.func.isTemplated()) {
+        mantaFuncName += "<>";
+    }
+
+    tensorFuncName = block.func.name;
+}
+
+SimpleBlock::SimpleBlock(const SimpleBlock& sBlock, string nType) : block(sBlock.block) {
+    mantaFuncName = block.func.name;
+    tensorFuncName = block.func.name;
+
+    newTypes = sBlock.newTypes;
+    newTypes.push_back(nType);
+
+    if(!newTypes.empty()) {
+        mantaFuncName += "<";
+
+        for(size_t i = 0; i < newTypes.size(); i++) {
+            mantaFuncName += newTypes[i];
+            if(newTypes.size() > i + 1)
+                mantaFuncName += ", ";
+
+
+            string NewType = newTypes[i];
+            NewType[0] = toupper(NewType[0]);
+            tensorFuncName += NewType;
+        }
+
+        mantaFuncName += ">";
+    }
+}
+
+SimpleBlock::SimpleBlock(const SimpleBlock& sBlock, Type& nType) : block(sBlock.block) {
+    mantaFuncName = sBlock.mantaFuncName;
+    tensorFuncName = sBlock.tensorFuncName;
+
+    string NewType = nType.toString();          // TODO replace ... not correct
+    stringReplace(NewType, "<", "");
+    stringReplace(NewType, ">", "");
+    NewType[0] = toupper(NewType[0]);
+    tensorFuncName += NewType;
+}
+
+string SimpleBlock::toString() {
+    ostringstream os;
+
+    os << mantaFuncName << "/ " << tensorFuncName << ": ";
+
+    for(size_t i = 0; i < block.func.arguments.size();  i++) {
+        os << block.func.arguments[i].type.name;
+
+        if(block.func.arguments[i].type.isTemplated()) {
+            os << "<";
+            for(size_t j = 0; j < block.func.arguments[i].type.templateTypes.size(); j++) {
+                os << block.func.arguments[i].type.templateTypes[j].name;
+            }
+            os << ">";
+        }
+
+        os << ", ";
+    }
+    os << endl;
+
+
+    return os.str();
+}
+
 
 
 vector<SimpleBlock> templatePreprocessor(vector<SimpleBlock> &blocks) {

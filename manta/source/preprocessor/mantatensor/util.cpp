@@ -17,7 +17,12 @@ void stringReplace(string& source, string const& find, string const& replace)
 }
 
 string convertToSnake_case(string camelCase) {
+    if(camelCase.length() <= 0) {
+        return "";
+    }
+
     string str(1, tolower(camelCase[0]));
+
 
     // First place underscores between contiguous lower and upper case letters.
     // For example, `_LowerCamelCase` becomes `_Lower_Camel_Case`.

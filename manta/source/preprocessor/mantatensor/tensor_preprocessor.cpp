@@ -1,8 +1,9 @@
-#include "TensorPreprocessor.h"
+#include "tensor_preprocessor.h"
+#include "util.h"
 
 using namespace std;
 
-string TensorProcessor::getTensorFuncName(NameStyle nameStyle) const {
+string TensorPreprocessor::getTensorFuncName(NameStyle nameStyle) const {
     switch(nameStyle) {
     case NS_name_style:
         return convertToSnake_case(tensorFuncName);
@@ -22,7 +23,7 @@ string TensorProcessor::getTensorFuncName(NameStyle nameStyle) const {
 
 
 
-void TensorProcessor::addHeader(CodeGenerator &codeGenerator) const {
+void TensorPreprocessor::addHeader(CodeGenerator &codeGenerator) const {
     StringList arguments;
     string opLine = "";
 
@@ -44,14 +45,14 @@ void TensorProcessor::addHeader(CodeGenerator &codeGenerator) const {
 }
 
 
-void TensorProcessor::addUsingNamespaces(CodeGenerator &codeGenerator) const {
+void TensorPreprocessor::addUsingNamespaces(CodeGenerator &codeGenerator) const {
     codeGenerator.addLine("using namespace tensorflow;");
     codeGenerator.addLine("using namespace Manta;");
     codeGenerator.addLine("using namespace mantatensor;");
 }
 
 
-void TensorProcessor::addFuncHeader(CodeGenerator& codeGenerator) const {
+void TensorPreprocessor::addFuncHeader(CodeGenerator& codeGenerator) const {
     StringList arguments;
     string opLine = "";
 
@@ -71,7 +72,7 @@ void TensorProcessor::addFuncHeader(CodeGenerator& codeGenerator) const {
 }
 
 
-TensorProcessor::TensorProcessor(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer) : addTimer(_addTimer) {
+TensorPreprocessor::TensorPreprocessor(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer) : addTimer(_addTimer) {
     const Block* block = &sBlock.block;
     tensorFuncName = sBlock.tensorFuncName;
     mantaFuncName = sBlock.mantaFuncName;
@@ -141,21 +142,21 @@ TensorProcessor::TensorProcessor(const SimpleBlock& sBlock, const std::string& c
     filename = sink.getFilename() + "wat";
 }
 
-TensorProcessor::~TensorProcessor() {
+TensorPreprocessor::~TensorPreprocessor() {
     for(size_t i = 0; i < tArguments.size(); i++) {
         delete (tArguments[i]);
     }
 }
 
-bool TensorProcessor::canConvert() const {
+bool TensorPreprocessor::canConvert() const {
     return errorMsg.length() == 0 && ignoredMsg.length() == 0;
 }
 
-bool TensorProcessor::threwError() const {
+bool TensorPreprocessor::threwError() const {
     return errorMsg.length() != 0;
 }
 
-string TensorProcessor::getErrorMsg() const {
+string TensorPreprocessor::getErrorMsg() const {
     return errorMsg;
 }
 

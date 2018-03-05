@@ -1,17 +1,17 @@
-#ifndef _P_MT_TENSORPREPROCESSOR_H
-#define _P_MT_TENSORPREPROCESSOR_H
+#ifndef _P_MT_TENSOR_PREPROCESSOR_H
+#define _P_MT_TENSOR_PREPROCESSOR_H
 
 #include <string>
-#include "CodeGenerator.h"
-#include "TArgument.h"
-#include "SimpleBlock.h"
-#include "TensorPreprocessor.h"
+#include "code_generator.h"
+#include "targument.h"
+#include "simple_block.h"
+#include "tensor_preprocessor.h"
 
 enum NameStyle {
     NS_name_style, NS_NameStyle, NS_Functor, NS_OP
 };
 
-class TensorProcessor {
+class TensorPreprocessor {
 protected:
     std::string tensorFuncName;
     std::string mantaFuncName;
@@ -37,9 +37,9 @@ protected:
     void addUsingNamespaces(CodeGenerator &codeGenerator) const;
 
 public:
-    TensorProcessor(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer = false);
+    TensorPreprocessor(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer = false);
 
-    virtual ~TensorProcessor();
+    virtual ~TensorPreprocessor();
 
     virtual std::string generateOpString() const = 0;
 
@@ -48,4 +48,4 @@ public:
     std::string getErrorMsg() const;
 };
 
-#endif // _P_MT_TENSORPREPROCESSOR_H
+#endif // _P_MT_TENSOR_PREPROCESSOR_H

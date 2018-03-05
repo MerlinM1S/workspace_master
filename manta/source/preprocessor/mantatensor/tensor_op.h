@@ -1,5 +1,5 @@
-#ifndef _P_MT_TENSOROP_H
-#define _P_MT_TENSOROP_H
+#ifndef _P_MT_TENSOR_OP_H
+#define _P_MT_TENSOR_OP_H
 
 #include <string>
 #include <vector>
@@ -73,17 +73,17 @@ public:
     std::string toString() {
 	std::string text;
 
-	text += funcName + ",";
-	text += returnType.toString() + ",";
+        text += funcName + ",";
+        text += returnType.toString() + ",";
 
-	for(size_t i = 0; i < parameters.size(); i++) {
+        for(size_t i = 0; i < parameters.size(); i++) {
            text += parameters[i].toString();
            if(parameters.size() - 1 > i) {
               text += ",";
            }
-	}
+        }
 
 	return text;
     }
 };
-#endif // _P_MT_TENSOROP_H
+#endif // _P_MT_TENSOR_OP_H

@@ -1,14 +1,14 @@
-#ifndef _P_MT_TENSORPREPROCESSORCPU_H
-#define _P_MT_TENSORPREPROCESSORCPU_H
+#ifndef _P_MT_TENSOR_PREPROCESSOR_CPU_H
+#define _P_MT_TENSOR_PREPROCESSOR_CPU_H
 
 #include <string>
-#include "CodeGenerator.h"
-#include "TArgument.h"
-#include "SimpleBlock.h"
-#include "TensorPreprocessor.h"
+#include "code_generator.h"
+#include "targument.h"
+#include "simple_block.h"
+#include "tensor_preprocessor.h"
 
 
-class TensorProcessorCPU : public TensorProcessor {
+class TensorPreprocessorCPU : public TensorPreprocessor {
 private:
     std::string getDeviceName() const;
 
@@ -21,10 +21,10 @@ private:
     void addRegisterKernelGPU(CodeGenerator& codeGenerator) const;
 
 public:
-    TensorProcessorCPU(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer = false) : TensorProcessor(sBlock, code, sink, _addTimer) { }
+    TensorPreprocessorCPU(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer = false) : TensorPreprocessor(sBlock, code, sink, _addTimer) { }
 
     std::string generateOpString() const;
     std::string generateBuildString() const;
 };
 
-#endif // _P_MT_TENSORPREPROCESSORCPU_H
+#endif // _P_MT_TENSOR_PREPROCESSOR_CPU_H

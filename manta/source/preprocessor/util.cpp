@@ -70,15 +70,21 @@ Sink::Sink(const string& infile, const string& outfile):
 }
 
 void Sink::write() {
-        writeFile(filename, inplace.str());
+        string outputText = inplace.str();
+
+        if(isGeneratingMT()) {
+            outputText += mtCustomOps.str();
+        }
+
+        writeFile(filename, outputText);
 
         if(gMTType == MTTF_CPU) {
-            string buildInfoStr = buildInfo.str();
-            if(buildInfoStr.length() > 0) {
-                writeFile(filename + ".build", buildInfoStr);
-            }
+                string buildInfoStr = mtBuildInfo.str();
+                if(buildInfoStr.length() > 0) {
+                        writeFile(filename + ".build", buildInfoStr);
+                }
         } else if (gMTType != MTTF_GPU && isHeader && !gDocMode) {
-            writeFile(filename + ".reg", link.str());
+                writeFile(filename + ".reg", link.str());
         }
 }
 

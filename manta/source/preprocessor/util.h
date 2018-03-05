@@ -43,7 +43,10 @@ struct Sink {
 
 	std::ostringstream inplace;
 	std::ostringstream link;
-	std::ostringstream buildInfo;
+
+	std::ostringstream mtBuildInfo;	// mantatensor build information
+        std::ostringstream mtCustomOps;	// mantatensor custom op data
+
 	bool isHeader;
 	std::string infile;
         

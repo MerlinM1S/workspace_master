@@ -160,15 +160,15 @@ SET(SOURCES
 	source/preprocessor/merge.cpp
 	source/preprocessor/codegen_python.cpp
 	source/preprocessor/codegen_kernel.cpp
-	source/preprocessor/codegen_tensor.cpp
+	source/preprocessor/codegen_mantatensor.cpp
 	source/preprocessor/fileio.cpp
 
-	source/preprocessor/mantatensor/SimpleBlock.cpp
-	source/preprocessor/mantatensor/TArgument.cpp
-	source/preprocessor/mantatensor/TensorBuild.cpp
-	source/preprocessor/mantatensor/TensorPreprocessor.cpp
-	source/preprocessor/mantatensor/TensorPreprocessorCPU.cpp
-	source/preprocessor/mantatensor/TensorPreprocessorGPU.cpp
+	source/preprocessor/mantatensor/simple_block.cpp
+	source/preprocessor/mantatensor/targument.cpp
+	source/preprocessor/mantatensor/tensor_build.cpp
+	source/preprocessor/mantatensor/tensor_preprocessor.cpp
+	source/preprocessor/mantatensor/tensor_preprocessor_cpu.cpp
+	source/preprocessor/mantatensor/tensor_preprocessor_gpu.cpp
 	source/preprocessor/mantatensor/util.cpp
 )
 add_executable(prep ${SOURCES})

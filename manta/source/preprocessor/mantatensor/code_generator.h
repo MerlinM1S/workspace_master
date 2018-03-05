@@ -1,5 +1,5 @@
-#ifndef _P_MT_CODEGENERATOR_H
-#define _P_MT_CODEGENERATOR_H
+#ifndef _P_MT_CODE_GENERATOR_H
+#define _P_MT_CODE_GENERATOR_H
 
 #include <string>
 #include <sstream>
@@ -48,4 +48,4 @@ private:
     }
 };
 
-#endif // _P_MT_CODEGENERATOR_H
+#endif // _P_MT_CODE_GENERATOR_H

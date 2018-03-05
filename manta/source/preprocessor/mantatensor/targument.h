@@ -1,10 +1,10 @@
 #ifndef _P_MT_TARGUMENT_H
 #define _P_MT_TARGUMENT_H
 
-#include "TType.h"
+#include "ttype.h"
 #include "../prep.h"
 #include <string>
-#include "CodeGenerator.h"
+#include "code_generator.h"
 
 class TArgument {
 public:

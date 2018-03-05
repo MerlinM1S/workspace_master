@@ -4,17 +4,17 @@
 #include <algorithm>
 #include <string>
 
-#include "mantatensor/TensorPreprocessorCPU.h"
-#include "mantatensor/TensorPreprocessorGPU.h"
+#include "mantatensor/tensor_preprocessor_cpu.h"
+#include "mantatensor/tensor_preprocessor_gpu.h"
 
 using namespace std;
 
-void processTensorFunctionCPU(const Block& block, const string& code, Sink& sink) {
+void processFunctionMantatensorCPU(const Block& block, const string& code, Sink& sink) {
     vector<SimpleBlock> simpleBlocks = replaceGridBase(block);
     simpleBlocks = templatePreprocessor(simpleBlocks);
 
     for(size_t i = 0; i < simpleBlocks.size(); i++) {
-        TensorProcessorCPU tensorProcessor = TensorProcessorCPU(simpleBlocks[i], code, sink, false);
+        TensorPreprocessorCPU tensorProcessor = TensorPreprocessorCPU(simpleBlocks[i], code, sink, false);
 
         if(!tensorProcessor.canConvert()) {
             if(tensorProcessor.threwError()) {
@@ -23,33 +23,33 @@ void processTensorFunctionCPU(const Block& block, const string& code, Sink& sink
             return;
         }
 
-        sink.buildInfo << tensorProcessor.generateBuildString();
-        sink.inplace << tensorProcessor.generateOpString();
+        sink.mtBuildInfo << tensorProcessor.generateBuildString();
+        sink.mtCustomOps << tensorProcessor.generateOpString();
     }
 
     cout << "Success: " << block.func.name << endl;
 }
 
-void processTensorFunctionGPU(const Block& block, const string& code, Sink& sink) {
+void processFunctionMantatensorGPU(const Block& block, const string& code, Sink& sink) {
     vector<SimpleBlock> simpleBlocks = replaceGridBase(block);
     simpleBlocks = templatePreprocessor(simpleBlocks);
 
     for(size_t i = 0; i < simpleBlocks.size(); i++) {
-        TensorProcessorGPU tensorProcessor = TensorProcessorGPU(simpleBlocks[i], code, sink, false);
+        TensorPreprocessorGPU tensorProcessor = TensorPreprocessorGPU(simpleBlocks[i], code, sink, false);
 
         if(!tensorProcessor.canConvert()) {
             return;
         }
 
-        sink.inplace << tensorProcessor.generateOpString();
+        sink.mtCustomOps << tensorProcessor.generateOpString();
     }
 }
 
 
-void processTensorFunction(const Block& block, const string& code, Sink& sink) {
+void processFunctionMantatensor(const Block& block, const string& code, Sink& sink) {
     if(gMTType == MTTF_CPU) {
-        processTensorFunctionCPU(block, code, sink);
+        processFunctionMantatensorCPU(block, code, sink);
     } else if(gMTType == MTTF_GPU) {
-        processTensorFunctionGPU(block, code, sink);
+        processFunctionMantatensorGPU(block, code, sink);
     }
 }
