@@ -45,6 +45,7 @@ public:
     bool canConvert() const;
     bool threwError() const;
     std::string getErrorMsg() const;
+    std::string getIgnoredMsg() const { return mIgnoredMsg; }
 };
 
 #endif // _P_MT_TENSOR_PREPROCESSOR_H

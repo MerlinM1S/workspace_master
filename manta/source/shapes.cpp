@@ -59,7 +59,7 @@ void ApplyShapeToGridSmooth (Grid<T>* grid, Grid<Real>& phi, Real sigma, Real sh
 }
 
 //! Kernel: Apply a shape to a grid, setting value inside
-TKERNEL() template<class T>
+KERNEL(mt) template<class T>
 void ApplyMaskToGrid (Grid<T>* grid, const Grid<int>* mask, const T value, const FlagGrid* respectFlags) {
         if (respectFlags && respectFlags->isObstacle(i,j,k))
                 return;

@@ -333,7 +333,7 @@ void processKernel(const Block& block, const string& code, Sink& sink) {
 	// process options
 	bool idxMode = false, reduce = false, pts = false, fourdMode = false;
 	bool hasLocals = !block.locals.empty(), hasRetType = kernel.returnType.name != "void";
-	string bnd = "0", reduceOp="", ompForOpt="";
+        string bnd = "0", reduceOp="", ompForOpt="";
 
 	MType mtType = gMTType;
 	for (size_t i=0; i<block.options.size(); i++) {
@@ -361,9 +361,13 @@ void processKernel(const Block& block, const string& code, Sink& sink) {
 			// - OpenMP: use chunksize 1 to distribute threads more randomly/evenly
 			// - TBB: default (auto_partitioner) is sufficient, do nothing
 			ompForOpt.append(" schedule(static,1)"); 
-		} else
-			errMsg(block.line0, "illegal kernel option '"+ opt +
-								"' Supported options are: 'ijk', 'idx', 'bnd=x', 'reduce=x', 'st', 'pts'");
+                } else if (opt == "mt" || opt == "mantatensor") {
+                    processFunctionMantatensor(block, code, sink);
+                } else {
+                    errMsg(block.line0, "illegal kernel option '"+ opt +
+                                                            "' Supported options are: 'ijk', 'idx', 'bnd=x', 'reduce=x', 'st', 'pts', 'mt'");
+                }
+
 	}
 	
 	// point out illegal paramter combinations

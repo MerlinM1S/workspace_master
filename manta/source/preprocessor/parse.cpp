@@ -254,7 +254,7 @@ void parseBlock(const BlockType blockType, const vector<Token>& tokens, const Cl
 	if (tk.curType() == TkBracketL)
 		block.options = parseArgumentList(tk, true, false);
 
-        if (blockType == BlockTypeKernel || blockType == BlockTypeTKernel) {
+        if (blockType == BlockTypeKernel) {
 		List<Type> templTypes;
 
 		// templated kernel
@@ -282,13 +282,8 @@ void parseBlock(const BlockType blockType, const vector<Token>& tokens, const Cl
 
 		block.line1 = tk.cur().line;
 		processKernel(block, tk.cur().text, sink);
-
-//                if(blockType == BlockTypeTKernel) {
-//                    cout << "Processing kernel: " << block.func.name << endl;
-//                    processTensorFunction(block, tk.cur().text, sink);
-//                }
 	}
-        else if (blockType == BlockTypePython || blockType == BlockTypeTPython)
+        else if (blockType == BlockTypePython)
 	{
 		// template instantiation / alias
 		if (tk.curType() == TkDescriptor && (tk.cur().text == "alias" || tk.cur().text == "instantiate"))  {
