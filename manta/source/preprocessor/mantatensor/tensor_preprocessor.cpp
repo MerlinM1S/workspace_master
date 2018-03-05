@@ -6,18 +6,18 @@ using namespace std;
 string TensorPreprocessor::getTensorFuncName(NameStyle nameStyle) const {
     switch(nameStyle) {
     case NS_name_style:
-        return convertToSnake_case(tensorFuncName);
+        return convertToSnake_case(mTensorFuncName);
     case NS_NameStyle: {
-        string result = tensorFuncName;
+        string result = mTensorFuncName;
         result[0] = toupper(result[0]);
         return result;
     }
     case NS_Functor:
-        return tensorFuncName + "_Functor";
+        return mTensorFuncName + "_Functor";
     case NS_OP:
-        return tensorFuncName + "_OP";
+        return mTensorFuncName + "_OP";
     default:
-        return tensorFuncName;
+        return mTensorFuncName;
     }
 }
 
@@ -72,29 +72,29 @@ void TensorPreprocessor::addFuncHeader(CodeGenerator& codeGenerator) const {
 }
 
 
-TensorPreprocessor::TensorPreprocessor(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer) : addTimer(_addTimer) {
-    const Block* block = &sBlock.block;
-    tensorFuncName = sBlock.tensorFuncName;
-    mantaFuncName = sBlock.mantaFuncName;
+TensorPreprocessor::TensorPreprocessor(const SimpleBlock& sBlock, bool addTimer) : mAddTimer(addTimer) {
+    const Block* block = &sBlock.mBlock;
+    mTensorFuncName = sBlock.mTensorFuncName;
+    mMantaFuncName = sBlock.mMantaFuncName;
 
-    argumentWithHighestDims = 0;
-    returnArgument = 0;
+    mArgumentWithHighestDims = 0;
+    mReturnArgument = 0;
     int highestDims = -1;
 
-    errorMsg = "";
+    mErrorMsg = "";
 
     if(block->func.returnType.name.length() == 0) {
-        ignoredMsg = "Constructors can not be converted.";
+        mIgnoredMsg = "Constructors can not be converted.";
         return;
     }
 
     if(block->parent) {
-        ignoredMsg = "Methods can not be converted.";
+        mIgnoredMsg = "Methods can not be converted.";
         return;
     }
 
     if(block->func.returnType.name.compare("void") != 0) {
-        errorMsg = "Functions may not have a return value.";
+        mErrorMsg = "Functions may not have a return value.";
         return;
     }
 
@@ -104,42 +104,40 @@ TensorPreprocessor::TensorPreprocessor(const SimpleBlock& sBlock, const std::str
             TArgument* argument = TArgument::create(&(block->func.arguments[i]));
 
             if(!argument) {
-                errorMsg = block->func.arguments[i].type.toString() + " is not a valid parameter type.";
+                mErrorMsg = block->func.arguments[i].type.toString() + " is not a valid parameter type.";
                 return;
             }
 
 
             // Set Indicies
             if(!argument->isTypeUnkown()) {
-                argument->inIndex = inIndex;
+                argument->setInIndex(inIndex);
                 inIndex++;
 
                 if(!argument->isTypeConst()) {
-                    if(returnArgument) {
-                        errorMsg = "Too many non-const parameters.";
+                    if(mReturnArgument) {
+                        mErrorMsg = "Too many non-const parameters.";
                         return;
                     } else {
-                        returnArgument = argument;
+                        mReturnArgument = argument;
                     }
                 }
             }
 
             tArguments.push_back(argument);
 
-            if(argument->tType.promisedDims > highestDims) {
-                highestDims = argument->tType.promisedDims ;
-                argumentWithHighestDims = argument;
+            if(argument->mTType.mPromisedDims > highestDims) {
+                highestDims = argument->mTType.mPromisedDims ;
+                mArgumentWithHighestDims = argument;
             }
         }
 
-        if(!argumentWithHighestDims || argumentWithHighestDims->tType.promisedDims < 3) {
-            errorMsg = "Functions require at least one parameter of type Grid.";
+        if(!mArgumentWithHighestDims || mArgumentWithHighestDims->mTType.mPromisedDims < 3) {
+            mErrorMsg = "Functions require at least one parameter of type Grid.";
             return;
         }
 
     }
-
-    filename = sink.getFilename() + "wat";
 }
 
 TensorPreprocessor::~TensorPreprocessor() {
@@ -149,14 +147,14 @@ TensorPreprocessor::~TensorPreprocessor() {
 }
 
 bool TensorPreprocessor::canConvert() const {
-    return errorMsg.length() == 0 && ignoredMsg.length() == 0;
+    return mErrorMsg.length() == 0 && mIgnoredMsg.length() == 0;
 }
 
 bool TensorPreprocessor::threwError() const {
-    return errorMsg.length() != 0;
+    return mErrorMsg.length() != 0;
 }
 
 string TensorPreprocessor::getErrorMsg() const {
-    return errorMsg;
+    return mErrorMsg;
 }
 

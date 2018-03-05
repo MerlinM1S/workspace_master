@@ -5,20 +5,20 @@
 #include <map>
 
 enum TType {
-    TTypeUnkown, TTypeMACGrid, TTypeFlagGrid, TTypeGridFloat, TTypeGridInt, TTypeGridVec3, TTypeGridBool, TTypeVec3, TTypeFloat, TTypeInt, TTypeBool
+    TTypeUnkown, TTypeMACGrid, TTypeGridVec3, TTypeFlagGrid, TTypeGridFloat, TTypeGridInt, TTypeVec3, TTypeFloat, TTypeInt, TTypeBool
 };
 
 class TTypeOp {
 public:
-    std::string cName;
-    std::string name;            // type name
-    std::string hName;           // header type name
-    bool isConst;
-    int promisedDims;
+    std::string mMantaName;
+    std::string mTensorName; 
+    std::string mTensorRegisterName;  
+    bool mIsConst;				// is const type (such as int, real, Vec3, etc.)
+    int mPromisedDims;
 
-    std::string pName;           // paramter type name
+    std::string mParameterName;
 
-    TType tType;
+    TType mTType;
 
     static TTypeOp create(std::string sType) {
         std::map<std::string, TTypeOp> typeConverter;
@@ -28,7 +28,6 @@ public:
         typeConverter["Grid<Real>"] = TTypeOp(TTypeGridFloat);
         typeConverter["Grid<int>"]  = TTypeOp(TTypeGridInt);
         typeConverter["Grid<Vec3>"] = TTypeOp(TTypeGridVec3);
-        typeConverter["Grid<bool>"] = TTypeOp(TTypeGridBool);
         typeConverter["Vec3"]       = TTypeOp(TTypeVec3);
         typeConverter["Real"]       = TTypeOp(TTypeFloat);
         typeConverter["float"]      = TTypeOp(TTypeFloat);
@@ -45,100 +44,92 @@ public:
 
     TTypeOp() {}
 
-    TTypeOp(const TType _tType) : tType(_tType) {
-        switch(tType) {
+    TTypeOp(const TType _tType) : mTType(_tType) {
+        switch(mTType) {
         case TTypeUnkown:
-            promisedDims = 0;
+            mPromisedDims = 0;
             break;
         case TTypeMACGrid:
-            cName = "MACGrid";
-            name = "float";
-            hName = "float";
-            isConst = false;
-            promisedDims = 5;
+            mMantaName = "MACGrid";
+            mTensorName = "float";
+            mTensorRegisterName = "float";
+            mIsConst = false;
+            mPromisedDims = 5;		// batch, width, height, depth, (x,y,z)
             break;
         case TTypeGridVec3:
-            cName = "Grid<Vec3>";
-            name = "float";
-            hName = "float";
-            isConst = false;
-            promisedDims = 5;
+            mMantaName = "Grid<Vec3>";
+            mTensorName = "float";
+            mTensorRegisterName = "float";
+            mIsConst = false;
+            mPromisedDims = 5;		// batch, width, height, depth, (x,y,z)
             break;
         case TTypeFlagGrid:
-            cName = "FlagGrid";
-            name = "int";
-            hName = "int32";
-            isConst = false;
-            promisedDims = 4;
+            mMantaName = "FlagGrid";
+            mTensorName = "int";
+            mTensorRegisterName = "int32";
+            mIsConst = false;
+            mPromisedDims = 4;
             break;
         case TTypeGridFloat:
-            cName = "Grid<float>";
-            name = "float";
-            hName = "float";
-            isConst = false;
-            promisedDims = 4;
-            break;
-        case TTypeGridBool:
-            cName = "Grid<bool>";
-            name = "bool";
-            hName = "bool";
-            isConst = false;
-            promisedDims = 4;
+            mMantaName = "Grid<float>";
+            mTensorName = "float";
+            mTensorRegisterName = "float";
+            mIsConst = false;
+            mPromisedDims = 4;		// batch, width, height, depth
             break;
         case TTypeGridInt:
-            cName = "Grid<int>";
-            name = "int";
-            hName = "int32";
-            isConst = false;
-            promisedDims = 4;
+            mMantaName = "Grid<int>";
+            mTensorName = "int";
+            mTensorRegisterName = "int32";
+            mIsConst = false;
+            mPromisedDims = 4;		// batch, width, height, depth
             break;
         case TTypeVec3:
-            cName = "Vec3";
-            name = "float";
-            hName = "float";
-            isConst = true;
-            promisedDims = 2;
+            mMantaName = "Vec3";
+            mTensorName = "float";
+            mTensorRegisterName = "float";
+            mIsConst = true;
+            mPromisedDims = 2;		// batch, (x,y,z)
             break;
         case TTypeFloat:
-            cName = "float";
-            name = "float";
-            hName = "float";
-            isConst = true;
-            promisedDims = 1;
+            mMantaName = "float";
+            mTensorName = "float";
+            mTensorRegisterName = "float";
+            mIsConst = true;
+            mPromisedDims = 1;		// batch
             break;
         case TTypeInt:
-            cName = "int";
-            name = "int";
-            hName = "int32";
-            isConst = true;
-            promisedDims = 1;
+            mMantaName = "int";
+            mTensorName = "int";
+            mTensorRegisterName = "int32";
+            mIsConst = true;
+            mPromisedDims = 1;		// batch
             break;
         case TTypeBool:
-            cName = "bool";
-            name = "bool";
-            hName = "bool";
-            isConst = true;
-            promisedDims = 1;
+            mMantaName = "bool";
+            mTensorName = "bool";
+            mTensorRegisterName = "bool";
+            mIsConst = true;
+            mPromisedDims = 1;		// batch
             break;
         }
 
-        pName = name;
+        mParameterName = mTensorName;
         if(!isScalar())
-            pName += "*";
+            mParameterName += "*";
     }
 
 
     bool isScalar() const {
-        return promisedDims == 0;
+        return mPromisedDims == 0;
     }
 
     bool isGrid() const {
-        switch(tType) {
+        switch(mTType) {
         case TTypeMACGrid:
         case TTypeGridVec3:
         case TTypeFlagGrid:
         case TTypeGridFloat:
-        case TTypeGridBool:
         case TTypeGridInt:
             return true;
         default:
@@ -147,7 +138,7 @@ public:
     }
 
     bool isUnkown() const {
-        return tType == TTypeUnkown;
+        return mTType == TTypeUnkown;
     }
 };
 

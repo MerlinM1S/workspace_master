@@ -7,12 +7,14 @@
 #include "code_generator.h"
 
 class TArgument {
+
 public:
-    const TTypeOp tType;
+    const TTypeOp mTType;
 
-    const Argument* argument;
+    const Argument* mArgument;
 
-    int inIndex;
+private:
+    int mInIndex;
 
 private:
     TArgument(const TTypeOp _tType, const Argument* _argument);
@@ -68,6 +70,7 @@ public:
     bool isTypeConst() const;
     bool isTypeUnkown() const;
 
+    void setInIndex(int index) { mInIndex = index; }
 
 private:
     std::string getName() const;

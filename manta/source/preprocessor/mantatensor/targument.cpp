@@ -1,26 +1,26 @@
 #include "targument.h"
 #include "util.h"
 
-TArgument::TArgument(TTypeOp _tType, const Argument* _argument) : tType(_tType), argument(_argument), inIndex(-1) {  }
+TArgument::TArgument(TTypeOp _tType, const Argument* _argument) : mTType(_tType), mArgument(_argument), mInIndex(-1) {  }
 
 bool TArgument::hasDefaultValue() const {
-    return argument->value.length() > 0;
+    return mArgument->value.length() > 0;
 }
 
 bool TArgument::isTypeConst() const {
-    return argument->type.isConst || tType.isConst;
+    return mArgument->type.isConst || mTType.mIsConst;
 }
 
 bool TArgument::isTypeUnkown() const {
-    return tType.isUnkown();
+    return mTType.isUnkown();
 }
 
 string TArgument::getInputName() const {
-    return "in_" + convertToSnake_case(argument->name);
+    return "in_" + convertToSnake_case(mArgument->name);
 }
 
 string TArgument::getOutputName() const {
-    return "out_" + convertToSnake_case(argument->name);
+    return "out_" + convertToSnake_case(mArgument->name);
 }
 
 string TArgument::TArgument::getInTensorName() const {
@@ -32,11 +32,11 @@ string TArgument::getOutTensorName() const {
 }
 
 string TArgument::getMantaName() const {
-    return argument->name;
+    return mArgument->name;
 }
 
 string TArgument::getDefaultValue() const {
-    return argument->value;
+    return mArgument->value;
 }
 
 void TArgument::addDimSizeLines(CodeGenerator& codeGenerator) const {
@@ -46,7 +46,7 @@ void TArgument::addDimSizeLines(CodeGenerator& codeGenerator) const {
     for(int i = 0; i < 4; i++) {
         string lineOp = "long " + dimNames[i] + " = ";
 
-        if(tType.promisedDims > i) {
+        if(mTType.mPromisedDims > i) {
            lineOp += getInTensorName() + ".shape().dim_size(" + SSTR(i) + ");";
         } else {
             lineOp += "-1;";
@@ -60,54 +60,54 @@ void TArgument::addDimSizeLines(CodeGenerator& codeGenerator) const {
 }
 
 void TArgument::addInputLine(CodeGenerator& codeGenerator) const {
-    if(inIndex >= 0) {
-        codeGenerator.addLine(".Input(\"" + getInputName() + ": " + tType.hName + "\")");
+    if(mInIndex >= 0) {
+        codeGenerator.addLine(".Input(\"" + getInputName() + ": " + mTType.mTensorRegisterName + "\")");
     }
 }
 
 void TArgument::addOutputLine(CodeGenerator& codeGenerator) const {
     if(!isTypeConst()) {
-        codeGenerator.addLine(".Output(\"" + getOutputName() + ": " + tType.hName + "\")");
+        codeGenerator.addLine(".Output(\"" + getOutputName() + ": " + mTType.mTensorRegisterName + "\")");
     }
 }
 
 void TArgument::addShapeInferenceLine(CodeGenerator& codeGenerator) const {
-    if(!isTypeConst() && inIndex >= 0) {
-        codeGenerator.addLine("c->set_output(0, c->input(" + SSTR(inIndex) + "));");
+    if(!isTypeConst() && mInIndex >= 0) {
+        codeGenerator.addLine("c->set_output(0, c->input(" + SSTR(mInIndex) + "));");
     }
 }
 
 string TArgument::generateInHeaderParam() const {
-    if(inIndex < 0)
+    if(mInIndex < 0)
         return "";
     else
-        return "const " + tType.pName + " " + getInputName();
+        return "const " + mTType.mParameterName + " " + getInputName();
 }
 
 string TArgument::generateOutHeaderParam() const {
     if(isTypeConst())
         return "";
     else
-        return tType.pName + " " + getOutputName();
+        return mTType.mParameterName + " " + getOutputName();
 }
 
 void TArgument::addInTensorLines(CodeGenerator& codeGenerator) const {
-    if(inIndex < 0) {
+    if(mInIndex < 0) {
         return;
     }
 
-    codeGenerator.addLine("const Tensor& " + getInTensorName() + " = context->input(" + SSTR(inIndex) + ");");
+    codeGenerator.addLine("const Tensor& " + getInTensorName() + " = context->input(" + SSTR(mInIndex) + ");");
 
     if(hasDefaultValue() && isPointer()) {
-        codeGenerator.addLine("const " + tType.pName + " " + getInputName() + " = NULL;");
+        codeGenerator.addLine("const " + mTType.mParameterName + " " + getInputName() + " = NULL;");
         codeGenerator.addLine("if(" + getInTensorName() + ".shape().dims() > 0) {", 1);
-        codeGenerator.addLine(getInputName() + " = " + getInTensorName() + ".flat<" + tType.name + ">().data();");
+        codeGenerator.addLine(getInputName() + " = " + getInTensorName() + ".flat<" + mTType.mTensorName + ">().data();");
         codeGenerator.addLine("}", -1);
     } else {
-        if(tType.isScalar()) {
-            codeGenerator.addLine("const " + tType.pName + " " + getInputName() + " = " + getInTensorName() + ".scalar<" + tType.name + ">().data()[0];");
+        if(mTType.isScalar()) {
+            codeGenerator.addLine("const " + mTType.mParameterName + " " + getInputName() + " = " + getInTensorName() + ".scalar<" + mTType.mTensorName + ">().data()[0];");
         } else {
-            codeGenerator.addLine("const " + tType.pName + " " + getInputName() + " = " + getInTensorName() + ".flat<" + tType.name + ">().data();");
+            codeGenerator.addLine("const " + mTType.mParameterName + " " + getInputName() + " = " + getInTensorName() + ".flat<" + mTType.mTensorName + ">().data();");
         }
     }
 
@@ -121,14 +121,14 @@ void TArgument::addOutTensorLines(CodeGenerator& codeGenerator) const {
 
     codeGenerator.addLine("Tensor* " + getOutTensorName() + " = NULL;");
     codeGenerator.addLine("OP_REQUIRES_OK(context, context->allocate_output(0, " + getInTensorName() + ".shape(), &" + getOutTensorName() + "));");
-    codeGenerator.addLine(tType.pName + " " + getOutputName() + " = " + getOutTensorName() + "->flat<" + tType.name + ">().data();");
+    codeGenerator.addLine(mTType.mParameterName + " " + getOutputName() + " = " + getOutTensorName() + "->flat<" + mTType.mTensorName + ">().data();");
 
     codeGenerator.newLine();
 }
 
 
 string TArgument::generateInParam() const {
-    if(inIndex < 0)
+    if(mInIndex < 0)
         return "";
     else
         return getInputName();
@@ -142,16 +142,16 @@ string TArgument::generateOutParam() const {
 }
 
 string TArgument::generateMantaParam() const {
-    if(tType.isUnkown()) {
-        return argument->value;
+    if(mTType.isUnkown()) {
+        return mArgument->value;
     } else {
         return getName();
     }
 }
 
 void TArgument::addCopyInToOutLines(CodeGenerator& codeGenerator) const {
-    if(!isTypeConst() && inIndex >= 0) {
-        codeGenerator.addLine("for(int i = 0; i < dimSize.lengthOf(" + SSTR(tType.promisedDims) + "); i++) {", 1);
+    if(!isTypeConst() && mInIndex >= 0) {
+        codeGenerator.addLine("for(int i = 0; i < dimSize.lengthOf(" + SSTR(mTType.mPromisedDims) + "); i++) {", 1);
         codeGenerator.addLine(getOutputName() + "[i] = " + getInputName() + "[i];");
         codeGenerator.addLine("}", -1);
         codeGenerator.newLine();
@@ -159,13 +159,13 @@ void TArgument::addCopyInToOutLines(CodeGenerator& codeGenerator) const {
 }
 
 void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string batch) const {
-    if(tType.isUnkown())
+    if(mTType.isUnkown())
         return;
 
     string baseVariableName;
     if(!isTypeConst()) {
         baseVariableName = getOutputName();
-    } else if (inIndex >= 0){
+    } else if (mInIndex >= 0){
         baseVariableName = getInputName();
     } else {
         return;
@@ -173,16 +173,15 @@ void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string ba
 
     string makeCode;
 
-    switch(tType.tType) {
+    switch(mTType.mTType) {
     case TTypeGridInt:
     case TTypeGridFloat:
-    case TTypeGridBool:
     case TTypeFlagGrid:
-        makeCode = tType.cName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", isTypeConst()) + ", true);";
+        makeCode = mTType.mMantaName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", isTypeConst()) + ", true);";
         break;
     case TTypeGridVec3:
     case TTypeMACGrid:
-         makeCode = tType.cName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", isTypeConst()) +  "), true);";
+         makeCode = mTType.mMantaName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", isTypeConst()) +  "), true);";
         break;
     case TTypeVec3:
         makeCode = "Vec3(" +  baseVariableName + " + (3 * " + batch + "));";
@@ -194,15 +193,15 @@ void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string ba
 
     if(isPointer()) {
         if(hasDefaultValue()) {
-            codeGenerator.addLine(tType.cName + "* " + getName() + " = NULL;");
+            codeGenerator.addLine(mTType.mMantaName + "* " + getName() + " = NULL;");
             codeGenerator.addLine("if(" + getInputName() + ") {", 1);
             codeGenerator.addLine(getName() + " = new " + makeCode);
             codeGenerator.addLine("}", -1);
         } else {
-            codeGenerator.addLine(tType.cName + "* " + getName() + " = new " + makeCode);
+            codeGenerator.addLine(mTType.mMantaName + "* " + getName() + " = new " + makeCode);
         }
     } else {
-        codeGenerator.addLine(tType.cName + " " + getName() + " = " + makeCode);
+        codeGenerator.addLine(mTType.mMantaName + " " + getName() + " = " + makeCode);
     }
 }
 
@@ -214,16 +213,16 @@ void TArgument::addCleanUp(CodeGenerator& codeGenerator) const {
 
 
 string TArgument::getName() const {
-    return argument->name;
+    return mArgument->name;
 }
 
 bool TArgument::isPointer() const {
-    return argument->type.isPointer;
+    return mArgument->type.isPointer;
 }
 
 string TArgument::AddConstCast(string arrayPointer, bool constCast) const {
     if(constCast) {
-        return "const_cast<" + tType.pName + ">(" +  arrayPointer + ")";
+        return "const_cast<" + mTType.mParameterName + ">(" +  arrayPointer + ")";
     } else {
         return arrayPointer;
     }

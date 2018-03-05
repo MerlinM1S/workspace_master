@@ -57,15 +57,15 @@ vector<string> splitString(const string& str, char delim) {
 
 void StringList::add(string text) {
     if(text.length() > 0) {
-        sList.push_back(text);
+        mList.push_back(text);
     }
 }
 
 string StringList::toString() const {
     std::string text = "";
-    for(size_t i = 0; i < sList.size(); i++) {
-        text += sList[i];
-        if(sList.size() - 1 > i) {
+    for(size_t i = 0; i < mList.size(); i++) {
+        text += mList[i];
+        if(mList.size() - 1 > i) {
             text += ", ";
         }
     }

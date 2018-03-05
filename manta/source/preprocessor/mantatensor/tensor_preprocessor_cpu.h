@@ -21,7 +21,7 @@ private:
     void addRegisterKernelGPU(CodeGenerator& codeGenerator) const;
 
 public:
-    TensorPreprocessorCPU(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer = false) : TensorPreprocessor(sBlock, code, sink, _addTimer) { }
+    TensorPreprocessorCPU(const SimpleBlock& sBlock, bool _addTimer = false) : TensorPreprocessor(sBlock, _addTimer) { }
 
     std::string generateOpString() const;
     std::string generateBuildString() const;

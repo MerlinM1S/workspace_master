@@ -6,44 +6,44 @@
 
 class CodeGenerator {
 public:
-    int intend;
+    int mIntend;
 
-    std::ostringstream os;
+    std::ostringstream mOS;
 
 public:
-    CodeGenerator() : intend(0) { }
+    CodeGenerator() : mIntend(0) { }
 
     void addLine(std::string text, int intendMod = 0) {
         if(intendMod < 0)
             changeIntend(intendMod);
 
         insertIntend();
-        os << text << std::endl;
+        mOS << text << std::endl;
 
         if(intendMod > 0)
             changeIntend(intendMod);
     }
 
     void changeIntend(int intendMod) {
-        intend += intendMod;
+        mIntend += intendMod;
     }
 
     void addText(std::string text) {
-        os << text;
+        mOS << text;
     }
 
     void newLine() {
-        os << std::endl;
+        mOS << std::endl;
     }
 
     std::string toString() const {
-        return os.str();
+        return mOS.str();
     }
 
 private:
     void insertIntend() {
-        for(int i = 0; i < intend; i++) {
-            os << "\t";
+        for(int i = 0; i < mIntend; i++) {
+            mOS << "\t";
         }
     }
 };

@@ -8,11 +8,11 @@
 
 struct TensorOpType {
 public:
-    std::string name;
-    std::string defaultValue;
+    std::string mName;
+    std::string mDefaultValue;
 
     TensorOpType () { }
-    TensorOpType (std::string _name, std::string _defaultValue) : name(_name), defaultValue(_defaultValue) { }
+    TensorOpType (std::string name, std::string defaultValue) : mName(name), mDefaultValue(defaultValue) { }
 
     static TensorOpType fromString(std::string text) {
 	TensorOpType tensorOpType;
@@ -20,37 +20,37 @@ public:
 	std::vector<std::string> split = splitString(text, '=');
 
 	if(split.size() == 2) {
-		tensorOpType.name = split[0];
-		tensorOpType.defaultValue = split[1];
+		tensorOpType.mName = split[0];
+		tensorOpType.mDefaultValue = split[1];
 	}
 		
 	return tensorOpType;
     }
 
     std::string toString() {
-        return name + "=" + defaultValue;
+        return mName + "=" + mDefaultValue;
     }
 };
 
 
 struct TensorOp {
 public:
-    std::string funcName;
-    TensorOpType returnType;
+    std::string mFuncName;
+    TensorOpType mReturnType;
 
-    std::vector<TensorOpType> parameters;
+    std::vector<TensorOpType> mParameters;
 
     TensorOp() { }
 
-    TensorOp(std::string _funcName) : funcName(_funcName) { }
+    TensorOp(std::string funcName) : mFuncName(funcName) { }
 
     void setReturnType(std::string name, std::string defaultValue = "") {
-         returnType.name = name;
-         returnType.defaultValue = defaultValue;
+         mReturnType.mName = name;
+         mReturnType.mDefaultValue = defaultValue;
     }
 
     void addParameter(std::string name, std::string defaultValue) {
-	parameters.push_back(TensorOpType(name, defaultValue));
+	mParameters.push_back(TensorOpType(name, defaultValue));
     }
 
     static TensorOp fromString(std::string text) {
@@ -59,11 +59,11 @@ public:
 	std::vector<std::string> split = splitString(text, ',');
 
 	if(split.size() >= 2) {
-	   tensorOp.funcName = split[0];
-	   tensorOp.returnType = TensorOpType::fromString(split[1]);
+	   tensorOp.mFuncName = split[0];
+	   tensorOp.mReturnType = TensorOpType::fromString(split[1]);
 
 	   for(size_t i = 2; i < split.size(); i++) {
-		tensorOp.parameters.push_back(TensorOpType::fromString(split[i]));
+		tensorOp.mParameters.push_back(TensorOpType::fromString(split[i]));
 	   }
 	}
 
@@ -73,12 +73,12 @@ public:
     std::string toString() {
 	std::string text;
 
-        text += funcName + ",";
-        text += returnType.toString() + ",";
+        text += mFuncName + ",";
+        text += mReturnType.toString() + ",";
 
-        for(size_t i = 0; i < parameters.size(); i++) {
-           text += parameters[i].toString();
-           if(parameters.size() - 1 > i) {
+        for(size_t i = 0; i < mParameters.size(); i++) {
+           text += mParameters[i].toString();
+           if(mParameters.size() - 1 > i) {
               text += ",";
            }
         }

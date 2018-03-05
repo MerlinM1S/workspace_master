@@ -6,13 +6,13 @@
 #include <vector>
 
 struct SimpleBlock {
-    Block block;
-    std::string tensorFuncName;
-    std::string mantaFuncName;
+    Block mBlock;
+    std::string mTensorFuncName;
+    std::string mMantaFuncName;
 
-    std::vector<std::string> newTypes;
+    std::vector<std::string> mNewTypes;
 
-    SimpleBlock(Block _block);
+    SimpleBlock(Block block);
     SimpleBlock(const SimpleBlock& sBlock, std::string nType);
     SimpleBlock(const SimpleBlock& sBlock, Type& nType);
 

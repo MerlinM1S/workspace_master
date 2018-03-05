@@ -10,63 +10,63 @@ using namespace std;
 
 
 
-SimpleBlock::SimpleBlock(Block _block) : block(_block) {
-    mantaFuncName = block.func.name;
-    if(block.func.isTemplated()) {
-        mantaFuncName += "<>";
+SimpleBlock::SimpleBlock(Block block) : mBlock(block) {
+    mMantaFuncName = mBlock.func.name;
+    if(mBlock.func.isTemplated()) {
+        mMantaFuncName += "<>";
     }
 
-    tensorFuncName = block.func.name;
+    mTensorFuncName = mBlock.func.name;
 }
 
-SimpleBlock::SimpleBlock(const SimpleBlock& sBlock, string nType) : block(sBlock.block) {
-    mantaFuncName = block.func.name;
-    tensorFuncName = block.func.name;
+SimpleBlock::SimpleBlock(const SimpleBlock& sBlock, string nType) : mBlock(sBlock.mBlock) {
+    mMantaFuncName = mBlock.func.name;
+    mTensorFuncName = mBlock.func.name;
 
-    newTypes = sBlock.newTypes;
-    newTypes.push_back(nType);
+    mNewTypes = sBlock.mNewTypes;
+    mNewTypes.push_back(nType);
 
-    if(!newTypes.empty()) {
-        mantaFuncName += "<";
+    if(!mNewTypes.empty()) {
+        mMantaFuncName += "<";
 
-        for(size_t i = 0; i < newTypes.size(); i++) {
-            mantaFuncName += newTypes[i];
-            if(newTypes.size() > i + 1)
-                mantaFuncName += ", ";
+        for(size_t i = 0; i < mNewTypes.size(); i++) {
+            mMantaFuncName += mNewTypes[i];
+            if(mNewTypes.size() > i + 1)
+                mMantaFuncName += ", ";
 
 
-            string NewType = newTypes[i];
-            NewType[0] = toupper(NewType[0]);
-            tensorFuncName += NewType;
+            string newType = mNewTypes[i];
+            newType[0] = toupper(newType[0]);
+            mTensorFuncName += newType;
         }
 
-        mantaFuncName += ">";
+        mMantaFuncName += ">";
     }
 }
 
-SimpleBlock::SimpleBlock(const SimpleBlock& sBlock, Type& nType) : block(sBlock.block) {
-    mantaFuncName = sBlock.mantaFuncName;
-    tensorFuncName = sBlock.tensorFuncName;
+SimpleBlock::SimpleBlock(const SimpleBlock& sBlock, Type& nType) : mBlock(sBlock.mBlock) {
+    mMantaFuncName = sBlock.mMantaFuncName;
+    mTensorFuncName = sBlock.mTensorFuncName;
 
-    string NewType = nType.toString();          // TODO replace ... not correct
-    stringReplace(NewType, "<", "");
-    stringReplace(NewType, ">", "");
-    NewType[0] = toupper(NewType[0]);
-    tensorFuncName += NewType;
+    string newType = nType.toString();          // TODO replace ... not correct
+    stringReplace(newType, "<", "");
+    stringReplace(newType, ">", "");
+    newType[0] = toupper(newType[0]);
+    mTensorFuncName += newType;
 }
 
 string SimpleBlock::toString() {
     ostringstream os;
 
-    os << mantaFuncName << "/ " << tensorFuncName << ": ";
+    os << mMantaFuncName << "/ " << mTensorFuncName << ": ";
 
-    for(size_t i = 0; i < block.func.arguments.size();  i++) {
-        os << block.func.arguments[i].type.name;
+    for(size_t i = 0; i < mBlock.func.arguments.size();  i++) {
+        os << mBlock.func.arguments[i].type.name;
 
-        if(block.func.arguments[i].type.isTemplated()) {
+        if(mBlock.func.arguments[i].type.isTemplated()) {
             os << "<";
-            for(size_t j = 0; j < block.func.arguments[i].type.templateTypes.size(); j++) {
-                os << block.func.arguments[i].type.templateTypes[j].name;
+            for(size_t j = 0; j < mBlock.func.arguments[i].type.templateTypes.size(); j++) {
+                os << mBlock.func.arguments[i].type.templateTypes[j].name;
             }
             os << ">";
         }
@@ -86,9 +86,9 @@ vector<SimpleBlock> templatePreprocessor(vector<SimpleBlock> &blocks) {
 
     string dataTypes[] = {"int", "float", "Vec3"};
 
-    while(result[0].block.func.isTemplated()) {
+    while(result[0].mBlock.func.isTemplated()) {
         SimpleBlock cSBlock = result[0];
-        Block* cBlock = &cSBlock.block;
+        Block* cBlock = &cSBlock.mBlock;
 
         result.erase (result.begin());
 
@@ -119,7 +119,7 @@ vector<SimpleBlock> templatePreprocessor(vector<SimpleBlock> &blocks) {
                 }
                 argument.type.templateTypes = nTemplates;
 
-                nBlock.block.func.arguments[j] = argument;
+                nBlock.mBlock.func.arguments[j] = argument;
             }
 
             result.push_back(nBlock);
@@ -169,7 +169,7 @@ vector<SimpleBlock> replaceGridBase(const Block& block) {
                 for(size_t j = 0; j < result.size();  j++) {
                     SimpleBlock nBlock = SimpleBlock(result[j], argument.type);
 
-                    nBlock.block.func.arguments[i] = argument;
+                    nBlock.mBlock.func.arguments[i] = argument;
 
                     nResult.push_back(nBlock);
                 }

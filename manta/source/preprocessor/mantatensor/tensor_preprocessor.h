@@ -13,19 +13,18 @@ enum NameStyle {
 
 class TensorPreprocessor {
 protected:
-    std::string tensorFuncName;
-    std::string mantaFuncName;
-    std::string filename;
+    std::string mTensorFuncName;
+    std::string mMantaFuncName;
 
     List<TArgument*> tArguments;
 
-    TArgument* argumentWithHighestDims;
-    TArgument* returnArgument;
+    TArgument* mArgumentWithHighestDims;
+    TArgument* mReturnArgument;
 
-    bool addTimer;
+    bool mAddTimer;
 
-    std::string errorMsg;
-    std::string ignoredMsg;
+    std::string mErrorMsg;		// Reason why this type of block can not be converted
+    std::string mIgnoredMsg;		// Reason why this type of block can and should not be converted
 
     std::string getTensorFuncName(NameStyle nameStyle) const;
 
@@ -37,7 +36,7 @@ protected:
     void addUsingNamespaces(CodeGenerator &codeGenerator) const;
 
 public:
-    TensorPreprocessor(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer = false);
+    TensorPreprocessor(const SimpleBlock& sBlock, bool _addTimer = false);
 
     virtual ~TensorPreprocessor();
 

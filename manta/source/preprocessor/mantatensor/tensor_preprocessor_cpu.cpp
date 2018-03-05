@@ -16,7 +16,7 @@ void TensorPreprocessorCPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
     codeGenerator.addLine("#include \"mt_dim_size.h\"");
     codeGenerator.addLine("#include \"mt_util.h\"");
     codeGenerator.newLine();
-    if(addTimer) {
+    if(mAddTimer) {
         codeGenerator.addLine("#include <time.h>");
         codeGenerator.newLine();
     }
@@ -63,7 +63,7 @@ string TensorPreprocessorCPU::getDeviceName() const {
 void TensorPreprocessorCPU::addFuncImplementation(CodeGenerator& codeGenerator) const {
     addFuncHeader(codeGenerator);
 
-    if(addTimer) {
+    if(mAddTimer) {
         codeGenerator.addLine("struct timespec timeStartFunctor, timeFinishFunctor;");
         codeGenerator.addLine("struct timespec timeStartFuncCall, timeFinishFuncCall;");
         codeGenerator.addLine("clock_gettime(CLOCK_MONOTONIC, &timeStartFunctor);");
@@ -88,7 +88,7 @@ void TensorPreprocessorCPU::addFuncImplementation(CodeGenerator& codeGenerator) 
 
     codeGenerator.newLine();
 
-    if(addTimer) {
+    if(mAddTimer) {
         codeGenerator.addLine("clock_gettime(CLOCK_MONOTONIC, &timeStartFuncCall);");
     }
 
@@ -98,7 +98,7 @@ void TensorPreprocessorCPU::addFuncImplementation(CodeGenerator& codeGenerator) 
         string opLine = "";
         StringList arguments;
 
-        opLine += mantaFuncName + "(";
+        opLine += mMantaFuncName + "(";
 
         for(size_t i = 0; i < tArguments.size(); i++) {
             arguments.add(tArguments[i]->generateMantaParam());
@@ -110,7 +110,7 @@ void TensorPreprocessorCPU::addFuncImplementation(CodeGenerator& codeGenerator) 
         codeGenerator.addLine(opLine);
     }
 
-    if(addTimer) {
+    if(mAddTimer) {
         codeGenerator.addLine("clock_gettime(CLOCK_MONOTONIC, &timeFinishFuncCall);");
         codeGenerator.addLine("elapsedFuncCall += (timeFinishFuncCall.tv_sec - timeStartFuncCall.tv_sec);");
         codeGenerator.addLine("elapsedFuncCall += (timeFinishFuncCall.tv_nsec - timeStartFuncCall.tv_nsec) / 1000000000.0;");
@@ -126,7 +126,7 @@ void TensorPreprocessorCPU::addFuncImplementation(CodeGenerator& codeGenerator) 
 
     codeGenerator.addLine("}", -1);
 
-    if(addTimer) {
+    if(mAddTimer) {
         codeGenerator.addLine("clock_gettime(CLOCK_MONOTONIC, &timeFinishFunctor);");
         codeGenerator.addLine("double elapsedFunctor = (timeFinishFunctor.tv_sec - timeStartFunctor.tv_sec);");
         codeGenerator.addLine("elapsedFunctor += (timeFinishFunctor.tv_nsec - timeStartFunctor.tv_nsec) / 1000000000.0;");
@@ -157,8 +157,8 @@ void TensorPreprocessorCPU::addFuncOP(CodeGenerator& codeGenerator) const {
     }
 
     // DimSize
-    if(argumentWithHighestDims) {
-        argumentWithHighestDims->addDimSizeLines(codeGenerator);
+    if(mArgumentWithHighestDims) {
+        mArgumentWithHighestDims->addDimSizeLines(codeGenerator);
     }
 
     codeGenerator.newLine();
@@ -255,7 +255,7 @@ string TensorPreprocessorCPU::generateOpString() const {
 
 string TensorPreprocessorCPU::generateBuildString() const {
     TensorOp tensorOp(getTensorFuncName(NS_name_style));
-    tensorOp.setReturnType(returnArgument->getMantaName());
+    tensorOp.setReturnType(mReturnArgument->getMantaName());
     for(size_t i = 0; i < tArguments.size(); i++) {
         tensorOp.addParameter(tArguments[i]->getMantaName(), tArguments[i]->getDefaultValue());
     }

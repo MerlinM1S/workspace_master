@@ -9,12 +9,12 @@
 
 using namespace std;
 
-void processFunctionMantatensorCPU(const Block& block, const string& code, Sink& sink) {
+void processFunctionMantatensorCPU(const Block& block, Sink& sink) {
     vector<SimpleBlock> simpleBlocks = replaceGridBase(block);
     simpleBlocks = templatePreprocessor(simpleBlocks);
 
     for(size_t i = 0; i < simpleBlocks.size(); i++) {
-        TensorPreprocessorCPU tensorProcessor = TensorPreprocessorCPU(simpleBlocks[i], code, sink, false);
+        TensorPreprocessorCPU tensorProcessor = TensorPreprocessorCPU(simpleBlocks[i], false);
 
         if(!tensorProcessor.canConvert()) {
             if(tensorProcessor.threwError()) {
@@ -30,12 +30,12 @@ void processFunctionMantatensorCPU(const Block& block, const string& code, Sink&
     cout << "Success: " << block.func.name << endl;
 }
 
-void processFunctionMantatensorGPU(const Block& block, const string& code, Sink& sink) {
+void processFunctionMantatensorGPU(const Block& block, Sink& sink) {
     vector<SimpleBlock> simpleBlocks = replaceGridBase(block);
     simpleBlocks = templatePreprocessor(simpleBlocks);
 
     for(size_t i = 0; i < simpleBlocks.size(); i++) {
-        TensorPreprocessorGPU tensorProcessor = TensorPreprocessorGPU(simpleBlocks[i], code, sink, false);
+        TensorPreprocessorGPU tensorProcessor = TensorPreprocessorGPU(simpleBlocks[i], false);
 
         if(!tensorProcessor.canConvert()) {
             return;
@@ -48,8 +48,8 @@ void processFunctionMantatensorGPU(const Block& block, const string& code, Sink&
 
 void processFunctionMantatensor(const Block& block, const string& code, Sink& sink) {
     if(gMTType == MTTF_CPU) {
-        processFunctionMantatensorCPU(block, code, sink);
+        processFunctionMantatensorCPU(block, sink);
     } else if(gMTType == MTTF_GPU) {
-        processFunctionMantatensorGPU(block, code, sink);
+        processFunctionMantatensorGPU(block, sink);
     }
 }

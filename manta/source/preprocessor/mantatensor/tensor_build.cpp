@@ -104,7 +104,7 @@ string generatePythonString(std::string sInCPUDir, std::string sLibFile) {
     pyStream << "import tensorflow as tf" << endl << endl;
     pyStream << "mantatensor_module = tf.load_op_library('" << libFile.toString() << "')" << endl;
     for(size_t i = 0; i < customTensorOps.size(); i++) {
-        pyStream <<"manta_" << customTensorOps[i].funcName << " = mantatensor_module." << customTensorOps[i].funcName << endl;
+        pyStream <<"manta_" << customTensorOps[i].mFuncName << " = mantatensor_module." << customTensorOps[i].mFuncName << endl;
     }
 
     return pyStream.str();

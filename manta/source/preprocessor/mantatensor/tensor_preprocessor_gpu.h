@@ -15,7 +15,7 @@ private:
     void addFuncImplementation(CodeGenerator& codeGenerator) const;
 
 public:
-    TensorPreprocessorGPU(const SimpleBlock& sBlock, const std::string& code, Sink& sink, bool _addTimer = false) : TensorPreprocessor(sBlock, code, sink, _addTimer) { }
+    TensorPreprocessorGPU(const SimpleBlock& sBlock, bool _addTimer = false) : TensorPreprocessor(sBlock, _addTimer) { }
 
     std::string generateOpString() const;
 };

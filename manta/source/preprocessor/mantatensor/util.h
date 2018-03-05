@@ -14,7 +14,7 @@ std::vector<std::string> splitString(const std::string& source, char delim = ' '
 
 class StringList {
 private:
-    std::vector<std::string> sList;
+    std::vector<std::string> mList;
 
 public:
     void add(std::string text);
