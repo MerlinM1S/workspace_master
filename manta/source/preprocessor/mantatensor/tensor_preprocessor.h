@@ -19,7 +19,6 @@ protected:
     List<TArgument*> tArguments;
 
     TArgument* mArgumentWithHighestDims;
-    TArgument* mReturnArgument;
 
     bool mAddTimer;
 

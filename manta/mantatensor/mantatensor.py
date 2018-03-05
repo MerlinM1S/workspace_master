@@ -13,6 +13,7 @@ manta_advect_semi_lagrange_grid_vec3 = mantatensor_module.advect_semi_lagrange_g
 manta_advect_semi_lagrange_gridfloat = mantatensor_module.advect_semi_lagrange_gridfloat
 manta_solve_pressure_part1 = mantatensor_module.solve_pressure_part1
 manta_solve_pressure_part2 = mantatensor_module.solve_pressure_part2
+manta_solve_pressure = mantatensor_module.solve_pressure
 
 class MantaSolver:
     def __init__(self, width, height, depth, batches, dt = 1):

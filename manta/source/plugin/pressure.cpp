@@ -458,7 +458,7 @@ PYTHON() void solvePressure(MACGrid& vel, Grid<Real>& pressure, const FlagGrid& 
 //! curv: curvature for surface tension effects
 //! surfTens: surface tension coefficient
 //! retRhs: return RHS divergence, e.g., for debugging; optional
-TPYTHON() void solvePressurePart1(const MACGrid& vel, Grid<Real>& pressure, const FlagGrid& flags, Real cgAccuracy = 1e-3,
+PYTHON() void solvePressurePart1(const MACGrid& vel, Grid<Real>& pressure, const FlagGrid& flags, Real cgAccuracy = 1e-3,
     const Grid<Real>* phi = 0,
     const Grid<Real>* perCellCorr = 0,
     const MACGrid* fractions = 0,
@@ -605,7 +605,7 @@ TPYTHON() void solvePressurePart1(const MACGrid& vel, Grid<Real>& pressure, cons
 //! curv: curvature for surface tension effects
 //! surfTens: surface tension coefficient
 //! retRhs: return RHS divergence, e.g., for debugging; optional
-TPYTHON() void solvePressurePart2(MACGrid& vel, const Grid<Real>& pressure, const FlagGrid& flags, Real cgAccuracy = 1e-3,
+PYTHON() void solvePressurePart2(MACGrid& vel, const Grid<Real>& pressure, const FlagGrid& flags, Real cgAccuracy = 1e-3,
     const Grid<Real>* phi = 0,
     Real gfClamp = 1e-04,
         const Grid<Real> *curv = NULL,

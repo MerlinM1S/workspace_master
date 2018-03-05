@@ -255,7 +255,11 @@ string TensorPreprocessorCPU::generateOpString() const {
 
 string TensorPreprocessorCPU::generateBuildString() const {
     TensorOp tensorOp(getTensorFuncName(NS_name_style));
-    tensorOp.setReturnType(mReturnArgument->getMantaName());
+
+
+   // tensorOp.setReturnType(mReturnArgument->getMantaName()); // TODO REPLACE
+
+
     for(size_t i = 0; i < tArguments.size(); i++) {
         tensorOp.addParameter(tArguments[i]->getMantaName(), tArguments[i]->getDefaultValue());
     }

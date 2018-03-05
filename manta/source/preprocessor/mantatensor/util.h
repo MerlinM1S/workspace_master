@@ -10,6 +10,7 @@
 
 void stringReplace(std::string& source, std::string const& find, std::string const& replace);
 std::string convertToSnake_case(std::string camelCase);
+std::string convertToCamelCase(std::string snake_case);
 std::vector<std::string> splitString(const std::string& source, char delim = ' ');
 
 class StringList {

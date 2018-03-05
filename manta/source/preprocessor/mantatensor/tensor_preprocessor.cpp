@@ -74,11 +74,10 @@ void TensorPreprocessor::addFuncHeader(CodeGenerator& codeGenerator) const {
 
 TensorPreprocessor::TensorPreprocessor(const SimpleBlock& sBlock, bool addTimer) : mAddTimer(addTimer) {
     const Block* block = &sBlock.mBlock;
-    mTensorFuncName = sBlock.mTensorFuncName;
+    mTensorFuncName = convertToCamelCase(sBlock.mTensorFuncName);
     mMantaFuncName = sBlock.mMantaFuncName;
 
     mArgumentWithHighestDims = 0;
-    mReturnArgument = 0;
     int highestDims = -1;
 
     mErrorMsg = "";
@@ -100,6 +99,7 @@ TensorPreprocessor::TensorPreprocessor(const SimpleBlock& sBlock, bool addTimer)
 
     {
         int inIndex = 0;
+        int outIndex = 0;
         for(unsigned int i = 0; i < block->func.arguments.size(); i++) {
             TArgument* argument = TArgument::create(&(block->func.arguments[i]));
 
@@ -115,12 +115,8 @@ TensorPreprocessor::TensorPreprocessor(const SimpleBlock& sBlock, bool addTimer)
                 inIndex++;
 
                 if(!argument->isTypeConst()) {
-                    if(mReturnArgument) {
-                        mErrorMsg = "Too many non-const parameters.";
-                        return;
-                    } else {
-                        mReturnArgument = argument;
-                    }
+                    argument->setOutIndex(outIndex);
+                    outIndex++;
                 }
             }
 

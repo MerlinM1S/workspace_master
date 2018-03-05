@@ -15,6 +15,7 @@ public:
 
 private:
     int mInIndex;
+    int mOutIndex;
 
 private:
     TArgument(const TTypeOp _tType, const Argument* _argument);
@@ -71,6 +72,7 @@ public:
     bool isTypeUnkown() const;
 
     void setInIndex(int index) { mInIndex = index; }
+    void setOutIndex(int index) { mOutIndex = index; }
 
 private:
     std::string getName() const;

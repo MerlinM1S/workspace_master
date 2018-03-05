@@ -71,7 +71,7 @@ KERNEL(bnd=1) void KnAddBuoyancy(const FlagGrid& flags, const Grid<Real>& factor
 }
 
 //! add Buoyancy force based on fctor (e.g. smoke density)
-TPYTHON() void addBuoyancy(const FlagGrid& flags, const Grid<Real>& density, MACGrid& vel, Vec3 gravity, Real coefficient=1.) {
+PYTHON() void addBuoyancy(const FlagGrid& flags, const Grid<Real>& density, MACGrid& vel, Vec3 gravity, Real coefficient=1.) {
 	Vec3 f = -gravity * flags.getParent()->getDt() / flags.getParent()->getDx() * coefficient;
 	KnAddBuoyancy(flags,density, vel, f);
 }
@@ -173,7 +173,7 @@ PYTHON() void setInflowBcs(MACGrid& vel, string dir, Vec3 value) {
 // set obstacle boundary conditions
 
 //! set no-stick wall boundary condition between ob/fl and ob/ob cells
-TKERNEL() void KnSetWallBcs(const FlagGrid& flags, MACGrid& vel) {
+KERNEL(mt) void KnSetWallBcs(const FlagGrid& flags, MACGrid& vel) {
 
 	bool curFluid = flags.isFluid(i,j,k);
 	bool curObs   = flags.isObstacle(i,j,k);

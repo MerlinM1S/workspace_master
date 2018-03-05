@@ -406,7 +406,7 @@ void fnAdvectSemiLagrange<MACGrid>(FluidSolver* parent, const FlagGrid& flags, c
 //! Perform semi-lagrangian advection of target Real- or Vec3 grid
 //! Open boundary handling needs information about width of border
 //! Clamping modes: 1 regular clamp leading to more overshoot and sharper results, 2 revert to 1st order slightly smoother less overshoot (enable when 1 gives artifacts)
-TPYTHON() void advectSemiLagrange (const FlagGrid* flags, const MACGrid* vel, GridBase* grid,
+PYTHON() void advectSemiLagrange (const FlagGrid* flags, const MACGrid* vel, GridBase* grid,
 						   int order = 1, Real strength = 1.0, int orderSpace = 1, bool openBounds = false, int boundaryWidth = 1, int clampMode = 1)
 {    
 	assertMsg(order==1 || order==2, "AdvectSemiLagrange: Only order 1 (regular SL) and 2 (MacCormack) supported");

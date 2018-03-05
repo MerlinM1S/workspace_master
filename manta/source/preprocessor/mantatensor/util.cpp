@@ -39,6 +39,35 @@ string convertToSnake_case(string camelCase) {
     return str;
 }
 
+std::string convertToCamelCase(std::string snake_case) {
+    if(snake_case.length() <= 0) {
+        return "";
+    }
+
+    string str = "";
+
+    bool nextCharUpper = false;
+
+    // First place underscores between contiguous lower and upper case letters.
+    // For example, `_LowerCamelCase` becomes `_Lower_Camel_Case`.
+    for (string::iterator it = snake_case.begin(); it != snake_case.end(); ++it) {
+        if((*it) == '_') {
+         nextCharUpper = true;
+         continue;
+        }
+
+        if(nextCharUpper) {
+            nextCharUpper = false;
+            str += toupper(*it);
+        } else {
+            str += *it;
+        }
+    }
+
+    return str;
+}
+
+
 vector<string> splitString(const string& str, char delim) {
     vector<string> cont;
 
