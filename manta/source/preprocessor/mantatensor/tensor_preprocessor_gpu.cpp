@@ -1,5 +1,5 @@
 #include "tensor_preprocessor_gpu.h"
-#include "util.h"
+#include "string_util.h"
 
 using namespace std;
 

@@ -32,6 +32,8 @@ class MantaSolver:
         self.initFlagsTensor()
         
         self.sess = tf.Session(config = tf.ConfigProto(device_count = {'GPU': 0}))
+
+	self.eTensor = tf.Variable(np.empty((self.batches, self.width, self.height, self.depth, 1), dtype=np.float32))
         
         
     def initFlagsTensor(self):
@@ -73,10 +75,31 @@ class MantaSolver:
         self.sess.run(step)
 
     def solvePressure(self, cgAccuracy = 1e-3, phi = 0, perCellCorr = 0, fractions = 0, gfClamp = 1e-04, cgMaxIterFac = 1.5, precondition = True, preconditioner = 1, enforceCompatibility = False, useL2Norm = False, zeroPressureFixing = False, curv = 0, surfTens = 0.0):
-        step1 = tf.group(self.pressureTensor.assign(manta_solve_pressure_part1(self.velocityTensor, self.pressureTensor, self.flagsTensor, cgAccuracy, phi, perCellCorr, fractions, gfClamp, cgMaxIterFac, precondition, preconditioner, enforceCompatibility, useL2Norm, zeroPressureFixing, curv, surfTens)))
-        step2 = tf.group(self.velocityTensor.assign(manta_solve_pressure_part2(self.velocityTensor, self.pressureTensor, self.flagsTensor, cgAccuracy, phi, gfClamp, curv, surfTens)))
-        self.sess.run(step1)
-        self.sess.run(step2)
+
+
+        #step1 = tf.assign( (self.velocityTensor, self.pressureTensor), manta_solve_pressure_part1(self.velocityTensor, self.pressureTensor, self.flagsTensor, cgAccuracy, phi, perCellCorr, fractions, gfClamp, cgMaxIterFac, precondition, preconditioner, enforceCompatibility, useL2Norm, zeroPressureFixing, curv, surfTens))
+
+        result = manta_solve_pressure(self.velocityTensor, self.pressureTensor, self.flagsTensor, cgAccuracy, phi, perCellCorr, fractions, gfClamp, cgMaxIterFac, precondition, preconditioner, enforceCompatibility, useL2Norm, zeroPressureFixing, curv, surfTens, self.eTensor)
+        
+	#op = self.velocityTensor.assign(result[0])
+	#self.sess.run(op)
+
+
+	variable_tuple = (self.velocityTensor, self.pressureTensor, self.eTensor)  # or whatever; you can use map_structure with tf.get_variable here as well
+	updates = tf.contrib.framework.nest.map_structure(
+	  lambda state, var: tf.assign(var, state),
+	  result,
+	  variable_tuple,
+	  check_types=False)
+
+	self.sess.run(updates)
+
+
+#	step2 = self.velocityTensor.assign(manta_solve_pressure_part2(self.velocityTensor, self.pressureTensor, self.flagsTensor, cgAccuracy, phi, gfClamp, curv, surfTens))
+
+#        self.sess.run(self.velocityTensor, self.pressureTensor)
+
+#        self.sess.run(step2)
     
 	
         
@@ -103,6 +126,9 @@ class MantaSolver:
     
     def getFlagsArray(self):
         return self.sess.run(self.flagsTensor)
+
+    def getPressureArray(self):
+        return self.sess.run(self.pressureTensor)
     
     
     def getDensityArray(self):

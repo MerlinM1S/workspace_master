@@ -3,7 +3,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "util.h"
+#include "string_util.h"
 
 using namespace std;
 
@@ -81,6 +81,17 @@ vector<string> splitString(const string& str, char delim) {
     cont.push_back(str.substr(previous, current - previous));
 
     return cont;
+}
+
+string trim(const string& str)
+{
+    size_t first = str.find_first_not_of(" \n\r\t");
+    if (string::npos == first)
+    {
+        return str;
+    }
+    size_t last = str.find_last_not_of(" \n\r\t");
+    return str.substr(first, (last - first + 1));
 }
 
 

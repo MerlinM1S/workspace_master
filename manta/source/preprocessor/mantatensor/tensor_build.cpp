@@ -1,10 +1,11 @@
 #include "tensor_build.h"
-#include "util.h"
+#include "string_util.h"
 #include <vector>
 #include <algorithm>
 #include <sstream>
 #include "../fileio.h"
-#include "tensor_op.h"
+#include "python_tensor_op.h"
+#include "code_generator.h"
 
 using namespace std;
 
@@ -16,10 +17,10 @@ bool isNotBuildFile (const File& file) {
     return file.getExtension().compare("build");
 }
 
-vector<TensorOp> getCustomTensorOps(vector<File> inBuildFiles) {
+vector<PythonTensorOp> getCustomTensorOps(vector<File> inBuildFiles) {
     inBuildFiles.erase(std::remove_if(inBuildFiles.begin(), inBuildFiles.end(), isNotBuildFile), inBuildFiles.end());
 
-    vector<TensorOp> result;
+    vector<PythonTensorOp> result;
     for (size_t i = 0; i < inBuildFiles.size(); i++) {
         File file = inBuildFiles[i];
 
@@ -27,7 +28,8 @@ vector<TensorOp> getCustomTensorOps(vector<File> inBuildFiles) {
 
         vector<string> strings = splitString(buildFileContent, '\n');
         for(size_t i = 0; i < strings.size() - 1; i++) {
-            result.push_back(TensorOp::fromString(strings[i]));
+            TensorOp tensorOp = TensorOp::fromString(strings[i]);
+            result.push_back(PythonTensorOp(tensorOp));
         }
     }
 
@@ -97,15 +99,25 @@ string generatePythonString(std::string sInCPUDir, std::string sLibFile) {
 
     vector<File> inCPUFiles = inCPUDir.getFilesOfDirectory();
 
-    vector<TensorOp> customTensorOps = getCustomTensorOps(inCPUFiles);
+    vector<PythonTensorOp> customTensorOps = getCustomTensorOps(inCPUFiles);
 
-    stringstream pyStream;
+    CodeGenerator codeGenerator;
 
-    pyStream << "import tensorflow as tf" << endl << endl;
-    pyStream << "mantatensor_module = tf.load_op_library('" << libFile.toString() << "')" << endl;
+    codeGenerator.addLine("import tensorflow as tf");
+    codeGenerator.newLine();
+    codeGenerator.addLine("mantatensor_module = tf.load_op_library('" + libFile.toString() + "')");
+
     for(size_t i = 0; i < customTensorOps.size(); i++) {
-        pyStream <<"manta_" << customTensorOps[i].mFuncName << " = mantatensor_module." << customTensorOps[i].mFuncName << endl;
+        customTensorOps[i].addModuleAssignment(codeGenerator, "mantatensor_module");
     }
 
-    return pyStream.str();
+    codeGenerator.newLine();
+    codeGenerator.newLine();
+
+    for(size_t i = 0; i < customTensorOps.size(); i++) {
+        customTensorOps[i].addFunctionDef(codeGenerator);
+        codeGenerator.newLine();
+    }
+
+    return codeGenerator.toString();
 }

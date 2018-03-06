@@ -92,7 +92,7 @@ string File::readFile() {
 void File::writeFile(string& text) {
     ofstream ofs(toString().c_str(), ios::binary | ios::out);
     if (!ofs.good()) {
-            cerr << "preprocessor error: Can't write to file '" << toString() << "'" << endl;
+        cerr << "preprocessor error: Can't write to file '" << toString() << "'" << endl;
     } else {
         ofs << text;
         ofs.close();

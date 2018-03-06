@@ -1,6 +1,6 @@
 #include "tensor_preprocessor_cpu.h"
 #include "tensor_op.h"
-#include "util.h"
+#include "string_util.h"
 
 using namespace std;
 
@@ -256,9 +256,10 @@ string TensorPreprocessorCPU::generateOpString() const {
 string TensorPreprocessorCPU::generateBuildString() const {
     TensorOp tensorOp(getTensorFuncName(NS_name_style));
 
-
-   // tensorOp.setReturnType(mReturnArgument->getMantaName()); // TODO REPLACE
-
+    for(size_t i = 0; i < tArguments.size(); i++) {
+        if(!tArguments[i]->isTypeConst())
+            tensorOp.addReturnType(tArguments[i]->getMantaName());
+    }
 
     for(size_t i = 0; i < tArguments.size(); i++) {
         tensorOp.addParameter(tArguments[i]->getMantaName(), tArguments[i]->getDefaultValue());

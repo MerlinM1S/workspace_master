@@ -35,7 +35,7 @@ height = int(res*1.5)
 depth = res
 random.seed(seed)
 
-loops = 50
+loops = 10
 
 imgScale = 6
 
@@ -111,6 +111,7 @@ for t in range(loops):
 	
 mtd.createImageGrid("manta_den", mantaDensity, width, height, depth, slice, scale = imgScale)
 mtd.createImageGrid("manta_vel", mantaVel, width, height, depth, slice, scale = imgScale)
+mtd.createImageGrid("manta_pre", mantaPressure, width, height, depth, slice, scale = imgScale)
 
 #mtd.printGrid(mantaVel, width, height, depth)
 
@@ -138,6 +139,7 @@ for t in range(loops):
 
 mtd.createImage("tensor_den", solver.getDensityArray(), slice, scale = imgScale) 
 mtd.createImage("tensor_vel", solver.getVelocityArray(), slice, scale = imgScale) 
+mtd.createImage("tensor_pre", solver.getPressureArray(), slice, scale = imgScale) 
 
 
 '''

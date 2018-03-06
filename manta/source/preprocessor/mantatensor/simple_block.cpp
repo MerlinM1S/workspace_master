@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include "util.h"
+#include "string_util.h"
 
 #include "simple_block.h"
 

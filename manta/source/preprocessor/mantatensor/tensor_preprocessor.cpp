@@ -1,5 +1,5 @@
 #include "tensor_preprocessor.h"
-#include "util.h"
+#include "string_util.h"
 
 using namespace std;
 

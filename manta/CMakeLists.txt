@@ -169,7 +169,7 @@ SET(SOURCES
 	source/preprocessor/mantatensor/tensor_preprocessor.cpp
 	source/preprocessor/mantatensor/tensor_preprocessor_cpu.cpp
 	source/preprocessor/mantatensor/tensor_preprocessor_gpu.cpp
-	source/preprocessor/mantatensor/util.cpp
+	source/preprocessor/mantatensor/string_util.cpp
 )
 add_executable(prep ${SOURCES})
 if (NOT WIN32)

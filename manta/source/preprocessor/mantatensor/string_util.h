@@ -1,5 +1,5 @@
-#ifndef _P_MT_UTIL_H
-#define _P_MT_UTIL_H
+#ifndef _P_MT_STRING_UTIL_H
+#define _P_MT_STRING_UTIL_H
 
 #include <iostream>
 #include <string>
@@ -13,6 +13,8 @@ std::string convertToSnake_case(std::string camelCase);
 std::string convertToCamelCase(std::string snake_case);
 std::vector<std::string> splitString(const std::string& source, char delim = ' ');
 
+std::string trim(const std::string& str);
+
 class StringList {
 private:
     std::vector<std::string> mList;
@@ -23,4 +25,4 @@ public:
     std::string toString() const;
 };
 
-#endif // _P_MT_UTIL_H
+#endif // _P_MT_STRING_UTIL_H
