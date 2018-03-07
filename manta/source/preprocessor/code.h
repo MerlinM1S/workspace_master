@@ -58,20 +58,6 @@ struct Type : Text {
 	bool operator==(const Type& a) const;
 	std::string build(bool refify = false) const;
 	virtual std::string dynamicClass() { return "Type"; }
-
-        std::string toString() const {
-            std::string text = name;
-            if(isTemplated()) {
-                text += "<";
-                for(size_t i = 0; i < templateTypes.size(); i++) {
-                        text += templateTypes[i].toString();
-                    if(i + 1 < templateTypes.size())
-                        text += ", ";
-                }
-                text += ">";
-            }
-            return text;
-        }
 };
 
 struct Argument : Text {

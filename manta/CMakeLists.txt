@@ -170,6 +170,9 @@ SET(SOURCES
 	source/preprocessor/mantatensor/tensor_preprocessor_cpu.cpp
 	source/preprocessor/mantatensor/tensor_preprocessor_gpu.cpp
 	source/preprocessor/mantatensor/string_util.cpp
+	source/preprocessor/mantatensor/tensor_op.cpp
+	source/preprocessor/mantatensor/code_util.cpp
+	source/preprocessor/mantatensor/python_tensor_op.cpp
 )
 add_executable(prep ${SOURCES})
 if (NOT WIN32)

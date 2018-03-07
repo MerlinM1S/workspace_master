@@ -1,6 +1,7 @@
 #include "tensor_preprocessor_cpu.h"
 #include "tensor_op.h"
 #include "string_util.h"
+#include "code_util.h"
 
 using namespace std;
 
@@ -15,7 +16,6 @@ void TensorPreprocessorCPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
     codeGenerator.newLine();
     codeGenerator.addLine("#include \"mt_dim_size.h\"");
     codeGenerator.addLine("#include \"mt_util.h\"");
-    codeGenerator.addLine("#include \"levelset.h\"");
     codeGenerator.newLine();
     if(mAddTimer) {
         codeGenerator.addLine("#include <time.h>");
@@ -253,25 +253,6 @@ string TensorPreprocessorCPU::generateOpString() const {
 
     return codeGenerator.toString();
 }
-
-string typeToString(Type type) {
-    string result = "";
-
-    result += type.name;
-
-    if(type.isTemplated()) {
-        result += "<";
-        StringList templateTypes;
-        for(size_t i = 0; i < type.templateTypes.size(); i++) {
-             templateTypes.add(typeToString(type.templateTypes[i]));
-        }
-        result += templateTypes.toString();
-        result += ">";
-    }
-
-    return result;
-}
-
 
 string TensorPreprocessorCPU::generateBuildString() const {
     TensorOp tensorOp(mMantaFuncName, getTensorFuncName(NS_name_style));

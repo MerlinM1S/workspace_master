@@ -21,15 +21,7 @@ private:
     TArgument(const TTypeOp _tType, const Argument* _argument);
 
 public:
-    static TArgument* create(const Argument* argument) {
-	TTypeOp tType = TTypeOp::create(argument->type.toString());
-
-	if(!tType.isUnkown() || argument->value.length() > 0) {
-	    return new TArgument(tType, argument);
-	} else {
-	    return NULL;
-	}
-    }
+    static TArgument* create(const Argument* argument);
 
     std::string getInputName() const;
     std::string getOutputName() const;

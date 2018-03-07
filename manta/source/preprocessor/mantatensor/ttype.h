@@ -71,7 +71,7 @@ public:
             mTensorName = "int";
             mTensorRegisterName = "int32";
             mIsConst = false;
-            mPromisedDims = 4;
+            mPromisedDims = 4;          // batch, width, height, depth
             break;
         case TTypeGridFloat:
             mMantaName = "Grid<float>";

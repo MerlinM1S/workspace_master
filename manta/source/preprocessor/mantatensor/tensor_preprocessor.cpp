@@ -1,5 +1,6 @@
 #include "tensor_preprocessor.h"
 #include "string_util.h"
+#include "code_util.h"
 
 using namespace std;
 
@@ -104,7 +105,7 @@ TensorPreprocessor::TensorPreprocessor(const SimpleBlock& sBlock, bool addTimer)
             TArgument* argument = TArgument::create(&(block->func.arguments[i]));
 
             if(!argument) {
-                mErrorMsg = block->func.arguments[i].type.toString() + " is not a valid parameter type.";
+                mErrorMsg = typeToString(block->func.arguments[i].type) + " is not a valid parameter type.";
                 return;
             }
 

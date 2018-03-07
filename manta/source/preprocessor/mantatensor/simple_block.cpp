@@ -3,12 +3,11 @@
 #include <vector>
 #include <iostream>
 #include "string_util.h"
+#include "code_util.h"
 
 #include "simple_block.h"
 
 using namespace std;
-
-
 
 SimpleBlock::SimpleBlock(Block block) : mBlock(block) {
     mMantaFuncName = mBlock.func.name;
@@ -48,7 +47,7 @@ SimpleBlock::SimpleBlock(const SimpleBlock& sBlock, Type& nType) : mBlock(sBlock
     mMantaFuncName = sBlock.mMantaFuncName;
     mTensorFuncName = sBlock.mTensorFuncName;
 
-    string newType = nType.toString();          // TODO replace ... not correct
+    string newType = typeToString(nType);
     stringReplace(newType, "<", "");
     stringReplace(newType, ">", "");
     newType[0] = toupper(newType[0]);

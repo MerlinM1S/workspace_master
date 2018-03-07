@@ -1,5 +1,17 @@
 #include "targument.h"
 #include "string_util.h"
+#include "code_util.h"
+
+TArgument* TArgument::create(const Argument* argument) {
+    TTypeOp tType = TTypeOp::create(typeToString(argument->type));
+
+    if(!tType.isUnkown() || argument->value.length() > 0) {
+        return new TArgument(tType, argument);
+    } else {
+        return NULL;
+    }
+}
+
 
 TArgument::TArgument(TTypeOp _tType, const Argument* _argument) : mTType(_tType), mArgument(_argument), mInIndex(-1), mOutIndex(-1) {  }
 
@@ -47,7 +59,7 @@ void TArgument::addDimSizeLines(CodeGenerator& codeGenerator) const {
         string lineOp = "long " + dimNames[i] + " = ";
 
         if(mTType.mPromisedDims > i) {
-           lineOp += getInTensorName() + ".shape().dim_size(" + SSTR(i) + ");";
+            lineOp += getInTensorName() + ".shape().dim_size(" + SSTR(i) + ");";
         } else {
             lineOp += "-1;";
         }
@@ -165,7 +177,7 @@ void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string ba
     string baseVariableName;
     if(!isTypeConst()) {
         baseVariableName = getOutputName();
-    } else if (mInIndex >= 0){
+    } else if (mInIndex >= 0) {
         baseVariableName = getInputName();
     } else {
         return;
@@ -182,7 +194,7 @@ void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string ba
         break;
     case TTypeGridVec3:
     case TTypeMACGrid:
-         makeCode = mTType.mMantaName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", isTypeConst()) +  "), true);";
+        makeCode = mTType.mMantaName + "(&fluidSolver, (Vec3*) (" + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", isTypeConst()) +  "), true);";
         break;
     case TTypeVec3:
         makeCode = "Vec3(" +  baseVariableName + " + (3 * " + batch + "));";
