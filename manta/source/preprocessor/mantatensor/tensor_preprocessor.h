@@ -2,10 +2,10 @@
 #define _P_MT_TENSOR_PREPROCESSOR_H
 
 #include <string>
-#include "code_generator.h"
 #include "targument.h"
 #include "simple_block.h"
 #include "tensor_preprocessor.h"
+#include "string_util.h"
 
 enum NameStyle {
     NS_name_style, NS_NameStyle, NS_Functor, NS_OP

@@ -16,7 +16,7 @@ from numpy import linalg as LA
 import tensorflow as tf
 
 import mantatensor_debug as mtd
-import mantatensor as mt
+import mantatensor_solver as mts
 
 import shape
 

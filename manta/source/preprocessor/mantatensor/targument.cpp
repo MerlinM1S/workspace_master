@@ -176,6 +176,7 @@ void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string ba
     switch(mTType.mTType) {
     case TTypeGridInt:
     case TTypeGridFloat:
+    case TTypeLevelsetGrid:
     case TTypeFlagGrid:
         makeCode = mTType.mMantaName + "(&fluidSolver, " + AddConstCast(baseVariableName + " + dimSize.batchToIndex(4, " + batch + ")", isTypeConst()) + ", true);";
         break;
@@ -185,6 +186,9 @@ void TArgument::addMantaVariableCreation(CodeGenerator& codeGenerator, string ba
         break;
     case TTypeVec3:
         makeCode = "Vec3(" +  baseVariableName + " + (3 * " + batch + "));";
+        break;
+    case TTypeVec3i:
+        makeCode = "Vec3i(" +  baseVariableName + " + (3 * " + batch + "));";
         break;
     default:
         makeCode = baseVariableName + "[" + batch + "];";

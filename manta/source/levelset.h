@@ -22,6 +22,9 @@ class Mesh;
 //! Special function for levelsets
 PYTHON() class LevelsetGrid : public Grid<Real> {
 public:
+        //! init new grid with an existing array
+        LevelsetGrid(FluidSolver* parent, Real* data, bool show = true);
+
 	PYTHON() LevelsetGrid(FluidSolver* parent, bool show = true);
 	
 	//! reconstruct the levelset using fast marching

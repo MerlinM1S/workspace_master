@@ -15,6 +15,7 @@ void TensorPreprocessorCPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
     codeGenerator.newLine();
     codeGenerator.addLine("#include \"mt_dim_size.h\"");
     codeGenerator.addLine("#include \"mt_util.h\"");
+    codeGenerator.addLine("#include \"levelset.h\"");
     codeGenerator.newLine();
     if(mAddTimer) {
         codeGenerator.addLine("#include <time.h>");
@@ -253,8 +254,27 @@ string TensorPreprocessorCPU::generateOpString() const {
     return codeGenerator.toString();
 }
 
+string typeToString(Type type) {
+    string result = "";
+
+    result += type.name;
+
+    if(type.isTemplated()) {
+        result += "<";
+        StringList templateTypes;
+        for(size_t i = 0; i < type.templateTypes.size(); i++) {
+             templateTypes.add(typeToString(type.templateTypes[i]));
+        }
+        result += templateTypes.toString();
+        result += ">";
+    }
+
+    return result;
+}
+
+
 string TensorPreprocessorCPU::generateBuildString() const {
-    TensorOp tensorOp(getTensorFuncName(NS_name_style));
+    TensorOp tensorOp(mMantaFuncName, getTensorFuncName(NS_name_style));
 
     for(size_t i = 0; i < tArguments.size(); i++) {
         if(!tArguments[i]->isTypeConst())
@@ -262,7 +282,7 @@ string TensorPreprocessorCPU::generateBuildString() const {
     }
 
     for(size_t i = 0; i < tArguments.size(); i++) {
-        tensorOp.addParameter(tArguments[i]->getMantaName(), tArguments[i]->getDefaultValue());
+        tensorOp.addParameter(!tArguments[i]->isTypeUnkown(), typeToString(tArguments[i]->mArgument->type), tArguments[i]->getMantaName(), tArguments[i]->getDefaultValue());
     }
 
     return tensorOp.toString() + "\n";

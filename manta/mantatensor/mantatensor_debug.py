@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 import random
-import mantatensor as mt
+import mantatensor_solver as mts
 
 from numpy import linalg as LA
 
@@ -14,9 +14,9 @@ def randomizeFloatArray(array):
     for i in range(array.size):
         array.flat[i] = round(random.random(), 3)
 
-class MantaSolverTest(mt.MantaSolver):
+class MantaSolverTest(mts.MantaSolver):
     def __init__(self, width, height, depth, batches = 1, dt = 1):
-        mt.MantaSolver.__init__(self, width, height, depth, batches, dt) 
+        mts.MantaSolver.__init__(self, width, height, depth, batches, dt) 
         
         
     def createEmptyDensityArray(self):

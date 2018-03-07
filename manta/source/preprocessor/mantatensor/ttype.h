@@ -3,9 +3,10 @@
 
 #include <string>
 #include <map>
+#include <iostream> //only used for cout
 
 enum TType {
-    TTypeUnkown, TTypeMACGrid, TTypeGridVec3, TTypeFlagGrid, TTypeGridFloat, TTypeGridInt, TTypeVec3, TTypeFloat, TTypeInt, TTypeBool
+    TTypeUnkown, TTypeMACGrid, TTypeGridVec3, TTypeFlagGrid, TTypeGridFloat, TTypeLevelsetGrid, TTypeGridInt, TTypeVec3, TTypeVec3i, TTypeFloat, TTypeInt, TTypeBool
 };
 
 class TTypeOp {
@@ -22,17 +23,19 @@ public:
 
     static TTypeOp create(std::string sType) {
         std::map<std::string, TTypeOp> typeConverter;
-        typeConverter["MACGrid"]    = TTypeOp(TTypeMACGrid);
-        typeConverter["FlagGrid"]   = TTypeOp(TTypeFlagGrid);
-        typeConverter["Grid<float>"]= TTypeOp(TTypeGridFloat);
-        typeConverter["Grid<Real>"] = TTypeOp(TTypeGridFloat);
-        typeConverter["Grid<int>"]  = TTypeOp(TTypeGridInt);
-        typeConverter["Grid<Vec3>"] = TTypeOp(TTypeGridVec3);
-        typeConverter["Vec3"]       = TTypeOp(TTypeVec3);
-        typeConverter["Real"]       = TTypeOp(TTypeFloat);
-        typeConverter["float"]      = TTypeOp(TTypeFloat);
-        typeConverter["int"]        = TTypeOp(TTypeInt);
-        typeConverter["bool"]       = TTypeOp(TTypeBool);
+        typeConverter["MACGrid"]        = TTypeOp(TTypeMACGrid);
+        typeConverter["FlagGrid"]       = TTypeOp(TTypeFlagGrid);
+        typeConverter["Grid<float>"]    = TTypeOp(TTypeGridFloat);
+        typeConverter["Grid<Real>"]     = TTypeOp(TTypeGridFloat);
+        typeConverter["LevelsetGrid"]   = TTypeOp(TTypeLevelsetGrid);
+        typeConverter["Grid<int>"]      = TTypeOp(TTypeGridInt);
+        typeConverter["Grid<Vec3>"]     = TTypeOp(TTypeGridVec3);
+        typeConverter["Vec3"]           = TTypeOp(TTypeVec3);
+        typeConverter["Vec3i"]          = TTypeOp(TTypeVec3i);
+        typeConverter["Real"]           = TTypeOp(TTypeFloat);
+        typeConverter["float"]          = TTypeOp(TTypeFloat);
+        typeConverter["int"]            = TTypeOp(TTypeInt);
+        typeConverter["bool"]           = TTypeOp(TTypeBool);
 
 
         if (typeConverter.find(sType) != typeConverter.end()) {
@@ -77,6 +80,13 @@ public:
             mIsConst = false;
             mPromisedDims = 4;		// batch, width, height, depth
             break;
+        case TTypeLevelsetGrid:
+            mMantaName = "LevelsetGrid";
+            mTensorName = "float";
+            mTensorRegisterName = "float";
+            mIsConst = false;
+            mPromisedDims = 4;		// batch, width, height, depth
+            break;
         case TTypeGridInt:
             mMantaName = "Grid<int>";
             mTensorName = "int";
@@ -88,6 +98,13 @@ public:
             mMantaName = "Vec3";
             mTensorName = "float";
             mTensorRegisterName = "float";
+            mIsConst = true;
+            mPromisedDims = 2;		// batch, (x,y,z)
+            break;
+        case TTypeVec3i:
+            mMantaName = "Vec3i";
+            mTensorName = "int";
+            mTensorRegisterName = "int32";
             mIsConst = true;
             mPromisedDims = 2;		// batch, (x,y,z)
             break;

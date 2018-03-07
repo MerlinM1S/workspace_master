@@ -7,10 +7,8 @@
 
 using namespace std;
 
-void stringReplace(string& source, string const& find, string const& replace)
-{
-    for(string::size_type i = 0; (i = source.find(find, i)) != string::npos;)
-    {
+void stringReplace(string& source, string const& find, string const& replace) {
+    for(string::size_type i = 0; (i = source.find(find, i)) != string::npos;) {
         source.replace(i, find.length(), replace);
         i += replace.length();
     }
@@ -27,10 +25,10 @@ string convertToSnake_case(string camelCase) {
     // First place underscores between contiguous lower and upper case letters.
     // For example, `_LowerCamelCase` becomes `_Lower_Camel_Case`.
     for (string::iterator it = camelCase.begin() + 1; it != camelCase.end(); ++it) {
-      if (isupper(*it) && *(it-1) != '_' && (islower(*(it-1)) || islower(*(it+1)))) {
-        str += "_";
-      }
-      str += *it;
+        if (isupper(*it) && *(it-1) != '_' && (islower(*(it-1)) || islower(*(it+1)))) {
+            str += "_";
+        }
+        str += *it;
     }
 
     // Then convert it to lower case.
@@ -52,8 +50,8 @@ std::string convertToCamelCase(std::string snake_case) {
     // For example, `_LowerCamelCase` becomes `_Lower_Camel_Case`.
     for (string::iterator it = snake_case.begin(); it != snake_case.end(); ++it) {
         if((*it) == '_') {
-         nextCharUpper = true;
-         continue;
+            nextCharUpper = true;
+            continue;
         }
 
         if(nextCharUpper) {
@@ -66,7 +64,6 @@ std::string convertToCamelCase(std::string snake_case) {
 
     return str;
 }
-
 
 vector<string> splitString(const string& str, char delim) {
     vector<string> cont;
@@ -83,17 +80,16 @@ vector<string> splitString(const string& str, char delim) {
     return cont;
 }
 
-string trim(const string& str)
-{
+string trim(const string& str) {
     size_t first = str.find_first_not_of(" \n\r\t");
-    if (string::npos == first)
-    {
+    if (string::npos == first) {
         return str;
     }
     size_t last = str.find_last_not_of(" \n\r\t");
     return str.substr(first, (last - first + 1));
 }
 
+// ------------- StringList -------------
 
 void StringList::add(string text) {
     if(text.length() > 0) {
@@ -111,3 +107,6 @@ string StringList::toString() const {
     }
     return text;
 }
+
+
+

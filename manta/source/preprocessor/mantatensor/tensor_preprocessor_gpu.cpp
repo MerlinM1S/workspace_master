@@ -7,6 +7,7 @@ using namespace std;
 void TensorPreprocessorGPU::addIncludesEtc(CodeGenerator &codeGenerator) const {
     codeGenerator.addLine("#include \"mt_dim_size.h\"");
     codeGenerator.addLine("#include \"mt_util.h\"");
+    codeGenerator.addLine("#include \"levelset.h\"");
     codeGenerator.newLine();
     if(mAddTimer) {
         codeGenerator.addLine("#include <time.h>");
