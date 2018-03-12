@@ -77,9 +77,9 @@ OPTION(BUILD_STATIC "Enable building static library" OFF)
 OPTION(NOPYTHON "Compile without python support (limited functionality!)" OFF)
 
 # The following option will generate custom operators files for tensorflow
-OPTION(TENSORFLOW "Compile as tensorflow operator" OFF)
+OPTION(MANTATENSOR "Compile as tensorflow operator" OFF)
 
-if(TENSORFLOW)
+if(MANTATENSOR)
 	SET(GUI FALSE)
 	SET(NOPYTHON TRUE)
 	SET(NUMPY FALSE)
@@ -140,7 +140,7 @@ MESSAGE(STATUS "Options - "
 	" -DPYTHON_VERSION='${PYTHON_VERSION}' "
 	" -DNUMPY='${NUMPY}' "
 	" -DNOPYTHON='${NOPYTHON}' "
-	" -TENSORFLOW='${TENSORFLOW}' "
+	" -DMANTATENSOR='${MANTATENSOR}' "
 	)
 # " -DCUDA='${CUDA}' "
 MESSAGE(STATUS "Multithreading type : ${MT_TYPE}")
@@ -343,7 +343,7 @@ if (NOPYTHON)
 	add_definitions( -DNOPYTHON=1 )
 endif()
 
-set(TENSOR_INCLUDE
+set(MANTATENSOR_INCLUDE
 	source/nopython/manta.h
 	source/nopython/pclass.cpp
 	source/nopython/pclass.h
@@ -361,8 +361,8 @@ set(TENSOR_INCLUDE
 	source/util/vectorbase.h
 	source/util/vector4d.cpp
 	source/util/vector4d.h
-	source/tensorflow/mt_dim_size.h
-	source/tensorflow/mt_util.h
+	source/mantatensor/mt_dim_size.h
+	source/mantatensor/mt_util.h
 )
 
 # compile with numpy support?
@@ -541,7 +541,7 @@ ENDIF()
 # apply preprocessor
 
 
-if(NOT TENSORFLOW) 
+if(NOT MANTATENSOR) 
     set(SOURCES ${NOPP_SOURCES} ${SILENT_SOURCES})
 endif()
 set(HEADERS ${NOPP_HEADERS})
@@ -554,9 +554,10 @@ if (PREPDEBUG)
 endif()
 
 
-IF(TENSORFLOW) 
-	set(TENSORFLOW_DIR CACHE PATH "//The directory containing Tensorflow source.")
+IF(MANTATENSOR) 
+	set(TENSORFLOW_DIR CACHE PATH "The directory containing Tensorflow source.")
 
+	# Validate Tensorflow path
 	if(EXISTS "${TENSORFLOW_DIR}/tensorflow/core")
 		set(TENSORFLOW_OUT "${TENSORFLOW_DIR}/tensorflow/core/mantatensor")
 
@@ -574,12 +575,11 @@ IF(TENSORFLOW)
 	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/source")
 
 	FOREACH(device ${TF_DEVICES})
-
 		set(TENSORFLOW_OUT_LOCAL "${TENSORFLOW_OUT}/MantaTF_${device}")
 
 		file(MAKE_DIRECTORY "${TENSORFLOW_OUT_LOCAL}")
 
-		FOREACH(it ${PP_SOURCES} ${PP_HEADERS} ${TENSOR_INCLUDE})
+		FOREACH(it ${PP_SOURCES} ${PP_HEADERS} ${MANTATENSOR_INCLUDE})
 			get_filename_component(CURNAME ${it} NAME)
 			set(CURPP "${TENSORFLOW_OUT_LOCAL}/${CURNAME}") 
 			string(REPLACE "source/" "" INFILE ${it}) 
@@ -605,7 +605,8 @@ IF(TENSORFLOW)
 	SET(BUILD_FILE "${TENSORFLOW_OUT}/BUILD")
 	SET(BUILD_LIB "${TENSORFLOW_DIR}/bazel-bin/tensorflow/core/mantatensor/mantatensor.so")
 
-	if(TRUE)
+	# Create Tensorflow build file
+	if(FALSE)
 		add_custom_target(tensor_prep_run ALL
 			COMMAND "./prep" "build" "${TENSORFLOW_OUT_CPU}/" "${TENSORFLOW_OUT_GPU}/" "${BUILD_LIB}" "${TENSORFLOW_OUT}/"
 			DEPENDS ${PREPPED_SOURCES})
@@ -616,7 +617,7 @@ IF(TENSORFLOW)
 		list(APPEND PREPPED_SOURCES ${CURPP})
 
 		add_custom_target(tensor_build_run ALL
-			COMMAND "bazel" "build" "--config" "opt" "//tensorflow/core/mantatensor:mantatensor.so" "--cxxopt=\"-D_GLIBCXX_USE_CXX11_ABI=0\"" "--copt=-D MANTATENSOR" "--copt=-D MANTAVERSION=1"
+			COMMAND "bazel" "build" "--config" "opt" "//tensorflow/core/mantatensor:mantatensor.so" "--cxxopt=\"-D_GLIBCXX_USE_CXX11_ABI=0\"" "--copt=-D MANTATENSOR=\"tensor\"" "--copt=-D MANTAVERSION"
 			WORKING_DIRECTORY ${TENSORFLOW_OUT}
 			DEPENDS ${BUILD_FILE})
 	endif()
@@ -722,7 +723,7 @@ endif()
 #******************************************************************************
 # setup executable
 
-IF(NOT TENSORFLOW)
+IF(NOT MANTATENSOR)
     SET(EXECCMD manta)
 
     SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${F_LINKADD} ")

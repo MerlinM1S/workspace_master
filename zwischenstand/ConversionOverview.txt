@@ -1,0 +1,144 @@
+Failure: mantaMsg: std::string is not a valid parameter type.
+Failure: printBuildInfo: Functions may not have a return value.
+Failure: setDebugLevel: Functions require at least one parameter of type Grid.
+Failure: assertNumpy: Functions require at least one parameter of type Grid.
+Failure: gridMaxDiff: Functions may not have a return value.
+Failure: gridMaxDiffInt: Functions may not have a return value.
+Failure: gridMaxDiffVec3: Functions may not have a return value.
+Failure: getUvWeight: Functions may not have a return value.
+Failure: getGridAvg: Functions may not have a return value.
+Failure: getComp4d: Grid4d<Vec4> is not a valid parameter type.
+Failure: setComp4d: Grid4d<Real> is not a valid parameter type.
+Failure: grid4dMaxDiff: Functions may not have a return value.
+Failure: grid4dMaxDiffInt: Functions may not have a return value.
+Failure: grid4dMaxDiffVec3: Functions may not have a return value.
+Failure: grid4dMaxDiffVec4: Functions may not have a return value.
+Failure: setRegion4d: Grid4d<Real> is not a valid parameter type.
+Failure: setRegion4dVec4: Grid4d<Vec4> is not a valid parameter type.
+Failure: getSliceFrom4d: Grid4d<Real> is not a valid parameter type.
+Failure: getSliceFrom4dVec: Grid4d<Vec4> is not a valid parameter type.
+Failure: interpolateGrid4d: Grid4d<Real> is not a valid parameter type.
+Failure: interpolateGrid4dVec: Grid4d<Vec4> is not a valid parameter type.
+Failure: getUniFileSize: Functions may not have a return value.
+Failure: printUniFileInfoString: string is not a valid parameter type.
+Failure: setInflowBcs: string is not a valid parameter type.
+Failure: sampleFlagsWithParticles: BasicParticleSystem is not a valid parameter type.
+Failure: sampleLevelsetWithParticles: BasicParticleSystem is not a valid parameter type.
+Failure: sampleShapeWithParticles: Shape is not a valid parameter type.
+Failure: markFluidCells: BasicParticleSystem is not a valid parameter type.
+Failure: adjustNumber: BasicParticleSystem is not a valid parameter type.
+Failure: gridParticleIndex: BasicParticleSystem is not a valid parameter type.
+Failure: unionParticleLevelset: BasicParticleSystem is not a valid parameter type.
+Failure: averagedParticleLevelset: BasicParticleSystem is not a valid parameter type.
+Failure: pushOutofObs: BasicParticleSystem is not a valid parameter type.
+Failure: mapPartsToMAC: BasicParticleSystem is not a valid parameter type.
+Failure: mapPartsToGrid: BasicParticleSystem is not a valid parameter type.
+Failure: mapPartsToGridVec3: BasicParticleSystem is not a valid parameter type.
+Failure: mapGridToParts: BasicParticleSystem is not a valid parameter type.
+Failure: mapGridToPartsVec3: BasicParticleSystem is not a valid parameter type.
+Failure: mapMACToParts: BasicParticleSystem is not a valid parameter type.
+Failure: flipVelocityUpdate: BasicParticleSystem is not a valid parameter type.
+Failure: densityInflow: WaveletNoiseField is not a valid parameter type.
+Failure: addNoise: WaveletNoiseField is not a valid parameter type.
+Failure: setNoisePdata: BasicParticleSystem is not a valid parameter type.
+Failure: setNoisePdataVec3: BasicParticleSystem is not a valid parameter type.
+Failure: setNoisePdataInt: BasicParticleSystem is not a valid parameter type.
+Failure: obstacleGradient: Functions may not have a return value.
+Failure: obstacleLevelset: Functions may not have a return value.
+Failure: densityInflowMeshNoise: WaveletNoiseField is not a valid parameter type.
+Failure: densityInflowMesh: Mesh is not a valid parameter type.
+Failure: projectPpmFull: string is not a valid parameter type.
+Failure: addTestParts: BasicParticleSystem is not a valid parameter type.
+Failure: pdataMaxDiff: Functions may not have a return value.
+Failure: calcCenterOfMass: Functions may not have a return value.
+Failure: smoothMesh: Mesh is not a valid parameter type.
+Failure: subdivideMesh: Mesh is not a valid parameter type.
+Failure: killSmallComponents: Mesh is not a valid parameter type.
+Failure: releaseMG: Functions require at least one parameter of type Grid.
+Failure: particleSurfaceTurbulence: BasicParticleSystem is not a valid parameter type.
+Failure: debugCheckParts: BasicParticleSystem is not a valid parameter type.
+Failure: markAsFixed: Mesh is not a valid parameter type.
+Failure: texcoordInflow: VortexSheetMesh is not a valid parameter type.
+Failure: meshSmokeInflow: VortexSheetMesh is not a valid parameter type.
+Failure: vorticitySource: VortexSheetMesh is not a valid parameter type.
+Failure: smoothVorticity: VortexSheetMesh is not a valid parameter type.
+Failure: VPseedK41: VortexParticleSystem is not a valid parameter type.
+Failure: VICintegration: VortexSheetMesh is not a valid parameter type.
+Failure: applySimpleNoiseVec3: WaveletNoiseField is not a valid parameter type.
+Failure: applySimpleNoiseReal: WaveletNoiseField is not a valid parameter type.
+Failure: applyNoiseVec3: WaveletNoiseField is not a valid parameter type.
+Failure: totalSum: Functions may not have a return value.
+
+
+Success: cgSolveDiffusion
+Success: copyMacToVec3
+Success: convertMacToVec3
+Success: resampleVec3ToMac
+Success: resampleMacToVec3
+Success: copyLevelsetToReal
+Success: copyVec3ToReal
+Success: copyRealToVec3
+Success: convertLevelsetToReal
+Success: swapComponents
+Success: resetUvGrid
+Success: updateUvWeight
+Success: getComponent
+Success: setComponent
+Success: extrapolateMACSimple
+Success: extrapolateMACFromWeight
+Success: extrapolateLsSimple
+Success: extrapolateVec3Simple
+Success: ApplyMaskToGrid
+Success: quantizeGrid
+Success: quantizeGridVec3
+Success: resetPhiInObs
+Success: advectSemiLagrange
+Success: addGravity
+Success: addGravityNoScale
+Success: addBuoyancy
+Success: setOpenBound
+Success: resetOutflow
+Success: KnSetWallBcs
+Success: setWallBcs
+Success: setObstacleVelocity
+Success: vorticityConfinement
+Success: addForceField
+Success: testInitGridWithPos
+Success: debugIntToReal
+Success: combineGridVel
+Success: getLaplacian
+Success: processBurn
+Success: updateFlame
+Success: getSpiralVelocity2D
+Success: setGradientYWeight
+Success: PD_fluid_guiding
+Success: KEpsilonComputeProduction
+Success: KEpsilonSources
+Success: KEpsilonBcs
+Success: KEpsilonGradientDiffusion
+Success: applyEmission
+Success: checkSymmetry
+Success: checkSymmetryVec3
+Success: updateFractions
+Success: setObstacleFlags
+Success: initVortexVelocity
+Success: solvePressure
+Success: solvePressurePart1
+Success: solvePressurePart2
+Success: densityFromLevelset
+Success: interpolateGrid
+Success: interpolateGridVec3
+Success: interpolateMACGrid
+Success: computeEnergy
+Success: computeWaveletCoeffs
+Success: computeVorticity
+Success: computeStrainRateMag
+Success: extrapolateSimpleFlags
+Success: getCurl
+Success: calcSecDeriv2d
+Success: normalizeSumTo
+Success: cgSolveWE
+
+
+
+

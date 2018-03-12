@@ -350,7 +350,7 @@ void parseBlock(const BlockType blockType, const vector<Token>& tokens, const Cl
 					"malformed preprocessor keyword block. Expected 'PYTHON type funcname(args) [{}|;]'");
 				processPythonFunction(block, tk.cur().text, sink, inst);
 
-                                processFunctionMantatensor(block, tk.cur().text, sink);
+                                processFunctionMantatensor(block, sink);
 			}
 		}
 

@@ -46,7 +46,7 @@ void processFunctionMantatensorGPU(const Block& block, Sink& sink) {
 }
 
 
-void processFunctionMantatensor(const Block& block, const string& code, Sink& sink) {
+void processFunctionMantatensor(const Block& block, Sink& sink) {
     if(gMTType == MTTF_CPU) {
         processFunctionMantatensorCPU(block, sink);
     } else if(gMTType == MTTF_GPU) {

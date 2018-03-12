@@ -362,7 +362,7 @@ void processKernel(const Block& block, const string& code, Sink& sink) {
 			// - TBB: default (auto_partitioner) is sufficient, do nothing
 			ompForOpt.append(" schedule(static,1)"); 
                 } else if (opt == "mt" || opt == "mantatensor") {
-                    processFunctionMantatensor(block, code, sink);
+                    processFunctionMantatensor(block, sink);
                 } else {
                     errMsg(block.line0, "illegal kernel option '"+ opt +
                                                             "' Supported options are: 'ijk', 'idx', 'bnd=x', 'reduce=x', 'st', 'pts', 'mt'");

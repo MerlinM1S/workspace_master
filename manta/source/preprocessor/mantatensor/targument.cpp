@@ -2,6 +2,8 @@
 #include "string_util.h"
 #include "code_util.h"
 
+using namespace std;
+
 TArgument* TArgument::create(const Argument* argument) {
     TTypeOp tType = TTypeOp::create(typeToString(argument->type));
 
